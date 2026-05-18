@@ -1,7 +1,13 @@
 {
   "name": "upgrade-life",
   "version": "0.1.0",
+  "description": "Production studio for the Upgrade Life YouTube channel — ideas, scripts, narration, visuals, and ffmpeg assembly.",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tharun-se95/upgrade-life.git"
+  },
+  "homepage": "https://github.com/tharun-se95/upgrade-life#readme",
   "engines": {
     "node": ">=20.9.0"
   },
