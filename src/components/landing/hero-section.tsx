@@ -1,0 +1,96 @@
+import Link from "next/link";
+import { ArrowRight, BookOpen } from "lucide-react";
+
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { CHANNEL_DESK_PATH, CHANNEL_DESK_UPCOMING_HREF } from "@/lib/nav/channel-desk";
+
+import { GlassPanel } from "./glass-panel";
+import { SectionContainer } from "./section-container";
+
+export function HeroSection() {
+  return (
+    <section className="relative py-16 sm:py-24 lg:py-32">
+      <SectionContainer className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
+        <div className="flex flex-1 flex-col gap-6">
+          <div className="inline-flex w-fit items-center gap-2">
+            <span className="text-xs font-medium tracking-[0.28em] text-primary uppercase">
+              YouTube · long-form
+            </span>
+          </div>
+          <h1 className="font-heading max-w-xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl sm:leading-[1.08]">
+            Clarity when life feels loud—a calm blueprint for modern stress.
+          </h1>
+          <p className="max-w-lg text-lg leading-relaxed text-muted-foreground">
+            Upgrade Life is a human sanctuary: binge-worthy 10–20 minute stories
+            from a chill Big Brother who blends honest warmth with practical
+            upgrades—in mind, money, habits, and relationships. On screen, the
+            look is a Chibi-Lite educational webcomic: vector-clear, Cyber-Stoic
+            palette, readable story-forward frames.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Link
+              href={CHANNEL_DESK_PATH}
+              className={cn(
+                buttonVariants({ variant: "default", size: "lg" }),
+                "h-11 gap-2 px-6 text-sm"
+              )}
+            >
+              Open channel desk
+              <ArrowRight data-icon="inline-end" />
+            </Link>
+            <Link
+              href={CHANNEL_DESK_UPCOMING_HREF}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "h-11 gap-2 px-6 text-sm"
+              )}
+            >
+              <BookOpen data-icon="inline-start" />
+              Brainstorm ideas
+            </Link>
+            <Link
+              href="/studio"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "h-11 gap-2 px-6 text-sm"
+              )}
+            >
+              Production
+            </Link>
+          </div>
+        </div>
+        <div className="flex flex-1 justify-center lg:justify-end">
+          <GlassPanel className="relative w-full max-w-md overflow-hidden p-8 sm:p-10">
+            <div className="pointer-events-none absolute -top-24 -right-16 size-56 rounded-full bg-primary/25 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-10 size-48 rounded-full bg-accent/20 blur-3xl" />
+            <div className="relative flex flex-col gap-4">
+              <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+                Voice &amp; vibe
+              </p>
+              <p className="font-heading text-xl font-medium text-foreground">
+                The Big Brother
+              </p>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Your coolest, most reliable friend—wise, witty, laid back, and
+                honest enough to name the mess. He shares the blueprint that
+                helped him find calm when life feels loud.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground">
+                  Chibi-Lite webcomic look
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground">
+                  Topic-first storyboards
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground">
+                  Ken Burns + lofi mood
+                </span>
+              </div>
+            </div>
+          </GlassPanel>
+        </div>
+      </SectionContainer>
+    </section>
+  );
+}

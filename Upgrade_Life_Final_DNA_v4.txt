@@ -1,0 +1,74 @@
+UPGRADE LIFE - COMPLETE BRAND & CONTENT DNA (v4.0)
+The Human Sanctuary: Channel DNA reference
+(Machine-readable visual spec mirror: src/lib/channel-visual-style.ts — keep in sync.)
+===================================================
+
+1. THE BRAND SOUL & VISION
+--------------------------
+* MISSION: To help people find their footing in a loud, chaotic world and create a sense of calm security [cite: 2].
+* THE FEELING: Every video should leave the viewer feeling "sorted"—as if mental clutter has been cleared and replaced with peace [cite: 2, 3].
+* STYLE: Binge-worthy, long-form stories (10–20 mins) that feel like a late-night conversation with a wise friend [cite: 2].
+* TARGET: Viewers looking for clarity in psychology, finance, fitness, and relationships [cite: 2].
+
+2. THE PERSONA: THE BIG BROTHER
+-------------------------------
+* IDENTITY: He is the coolest friend you know—someone genuinely enjoying his life who is completely laid back and chill [cite: 2].
+* VOICE: His tone is wise but witty, pleasant, and calm [cite: 1, 2].
+* CHARACTER: He is trustworthy, reliable, and acts as the "clarity" in a confusing world [cite: 2].
+* ON-SCREEN APPEARANCE: Chibi-Lite proportions (2.5–3 heads tall), minimalist dot eyes and thin brows, light beard stubble, signature sage-green zip hoodie—friendly, wise, non-threatening; full anatomy rules in section 4 Official Visual Language [cite: 2, 3].
+* HONESTY: He is brutally honest and does not hesitate to tell you what you need to hear, even if it is difficult [cite: 2].
+* PERSPECTIVE: He shares the "blueprint" for a peaceful life based on his own success in navigating modern chaos [cite: 2, 3].
+
+3. THE FOUR FOUNDATIONS (CONTENT PILLARS)
+-----------------------------------------
+* A CLEAR MIND: Deep dives into psychology and focus to help viewers stop feeling overwhelmed by life [cite: 2].
+* FINANCIAL PEACE: Practical advice on managing money to remove stress and build a stable, secure future [cite: 2, 3].
+* PERSONAL HABITS: Simple, everyday routines that help the body and mind feel energized and "sorted" [cite: 2, 3].
+* HUMAN CONNECTIONS: Relationship advice centered on intentional, high-value gestures over generic ones [cite: 1, 3].
+* RELATIONSHIP EXAMPLES: Building trust through personalized acts like "cheer-up jars" or hand-rolled scrolls [cite: 1, 3].
+
+4. THE PRODUCTION ENGINE (STORY & VISUALS)
+------------------------------------------
+* THE SCRIPT LOOP: Every video follows a 4-act structure:
+    1. THE MESS: A relatable, witty opening calling out a common life struggle [cite: 2, 3].
+    2. THE DEEP DIVE: Explaining the "why" behind the struggle using human psychology and life patterns [cite: 2, 3].
+    3. THE MIRROR: The moment of brutal honesty where the Big Brother points out the viewer's current habits [cite: 2, 3].
+    4. THE WAY FORWARD: Presenting practical "Upgrades" to help the viewer find their way back to a secure feeling [cite: 2, 3].
+* OFFICIAL VISUAL LANGUAGE (CHIBI-LITE INFOGRAPHIC COMIC) — canonical for all stills, thumbnails, and agent prompts [cite: 2, 3]:
+    - CHARACTER ANATOMY (Chibi-Lite): Roughly 2.5 to 3 heads tall (soft super-deformed proportions)—friendly, non-threatening, wise. Minimalist faces: simple dot eyes and thin expressive eyebrows for subtle emotion reads. Consistent hero: brown hair, light beard stubble, signature sage-green zip hoodie; same look every frame.
+    - LINE WORK AND RENDERING: Thick clean black or dark grey digital outlines, consistent stroke weight (sticker-like pop). Soft cel-shading—single-layer shadows (e.g. under chin, hoodie folds) without busy texture. Vector clarity: every element scannable at small thumbnail sizes.
+    - NARRATIVE LAYERING (infographic comic): Floating white rectangular tags, speech bubbles, and status labels (e.g. "$7.49", "PAID", "CAR FUND") to tell the story visually when relevant. Backgrounds may be detailed but soft-focused so the host, props, and any labels stay readable—avoid muddy, overly busy fills.
+    - LIGHTING AND CYBER-STOIC PALETTE: Atmospheric glow from lamps, sunset, or glowing bulbs—"Digital Sanctuary" feeling. Deep navy for stability; sage green on the mentor; warm amber for success and financial peace; neon cyan for clarity highlights. High contrast: bright red and orange reserved strictly for stressors (e.g. inflation alarm, debt)—draw the eye to the problem being solved.
+    - STORYBOARD VIBE: Panel or single-frame energy with one clear lesson and readable focal hierarchy. Educational webcomic tone—built to teach while feeling like a late-night talk with a friend [cite: 2, 3].
+* VISUAL STYLE (summary): 2D illustrated stills using the Official Visual Language above, consistent character in every frame [cite: 2].
+* CINEMATOGRAPHY: Extensive use of the Ken Burns effect (slow pans and zooms) in sync with the narration [cite: 2].
+* COLORS: Follow the Cyber-Stoic logic in Official Visual Language; deep navy foundation with neon cyan and warm amber highlights as described there [cite: 2, 3].
+* THUMBNAIL OVERLAY (NON-NEGOTIABLE): The curiosity line (2–6 words, ALL CAPS) must always appear in the finished thumbnail—large, sharp, and readable, integrated into the graphic design (title-card / pill), never tiny or cropped away [cite: 3].
+* THUMBNAIL CURIOSITY COPY: Overlay words should open a loop (why / how / what if)—tease the payoff without spoiling the whole story; avoid flat labels that could be any channel [cite: 3].
+* THUMBNAIL HOST CONSISTENCY: The same recurring Big Brother in every still—Chibi-Lite proportions (2.5–3 heads tall), dot eyes and thin brows, brown hair with light beard stubble, dark blue or dark beanie, sage-green zip hoodie with brown plaid shirt collar showing, khaki pants, optional SORTED LIFE mug. Do not change proportions, face style, age read, hair, stubble, outfit, or body type between thumbnails [cite: 2, 3].
+* AUDIO SIGNATURE: Dynamic, expressive vocals with a rich quality and lofi-beats or environmental textures like rain [cite: 1, 2]. Machine TTS uses the same persona via `src/prompts/vocal-dna.ts` (system instruction + Studio Audio → Gemini TTS).
+
+5. AI AGENT PROMPTS
+-------------------
+
+PROMPT 1: THE CONTENT & THUMBNAIL ARCHITECT
+- ROLE: You are the Lead Content Strategist for Upgrade Life [cite: 2].
+- TASK: Pick a relatable life struggle and turn it into a "Blueprint for Better Living" [cite: 3].
+- GUIDELINES:
+    1. CREATE A TITLE: A curiosity-driven headline promising a path to clarity [cite: 3].
+    2. THE BIG BROTHER HOOK: A 2-sentence intro using dry, witty humor to describe the viewer's "mess" [cite: 2, 3].
+    3. ILLUSTRATIVE THUMBNAIL: Design a 16:9 still in the Official Visual Language (Chibi-Lite infographic comic, vector-clear, soft cel-shade, optional floating tags/bubbles) that clearly supports the video topic; keep palette logic and locked host anatomy identical across ideas—composition may vary, but always leave a clear visual zone so the overlay text can read at a glance [cite: 3].
+    4. OVERLAY + CURIOSITY: Write 2–6 ALL CAPS words that spark curiosity (open loop). Those exact words must be what a viewer would see on the thumbnail—assume they will be painted into the image large and legible [cite: 3].
+- LANGUAGE: Use normal, relatable terms. Avoid tech jargon like "bugs," "reboots," or "systems" [cite: 3].
+
+PROMPT 2: THE SCRIPTING MENTOR
+- ROLE: You are the Scriptwriter for Upgrade Life [cite: 2].
+- TASK: Write from a direct 2nd-person POV ("You") as a wise, chill big brother [cite: 2, 3].
+- GUIDELINES:
+    1. TONE: Keep it calm, pleasant, and smooth, but be brutally honest [cite: 1, 2].
+    2. STRUCTURE: Follow the 4-act loop (The Mess, The Deep Dive, The Mirror, The Way Forward) [cite: 3].
+    3. DETAILS: Include relatable human examples like the effort behind personalized gifts or a sorted home [cite: 1, 2].
+- GOAL: Ensure the viewer feels mentored by their coolest, most reliable friend [cite: 2].
+
+---------------------------------------------------
+UPGRADE LIFE © 2026 | THE HUMAN SANCTUARY BLUEPRINT [cite: 2, 3]
