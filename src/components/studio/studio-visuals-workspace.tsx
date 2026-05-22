@@ -3,6 +3,7 @@
 import { Download, Loader2 } from "lucide-react";
 
 import { useVisualsBatchGenerateContext } from "@/components/studio/visuals-batch-generate-context";
+import { VisBatchReportPanel } from "@/components/studio/vis-batch-report-panel";
 import { Button } from "@/components/ui/button";
 
 export function StudioVisualsWorkspace({ videoId: _videoId }: { videoId: string }) {
@@ -13,16 +14,23 @@ export function StudioVisualsWorkspace({ videoId: _videoId }: { videoId: string 
     clipReadyCount,
     loadError,
     genError,
+    batchReport,
+    retryCount,
+    dismissBatchReport,
     clipError,
     pending,
     progress,
     runAll,
+    runFailedOrMissing,
+    visStillMinWords,
     clipsPending,
     clipsProgress,
     runAllClips,
     exportPending,
     exportError,
     downloadAssemblyVideo,
+    refreshStudioVisuals,
+    refreshPending,
   } = useVisualsBatchGenerateContext();
 
   if (!script) {
@@ -30,7 +38,7 @@ export function StudioVisualsWorkspace({ videoId: _videoId }: { videoId: string 
       <section className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
         <p className="text-xs text-muted-foreground leading-snug">
           Load or generate a script on the Script stage to unlock{" "}
-          <span className="font-medium text-foreground">Generate all visuals</span>.
+          <span className="font-medium text-foreground">Generate stills</span>.
         </p>
       </section>
     );
@@ -50,10 +58,10 @@ export function StudioVisualsWorkspace({ videoId: _videoId }: { videoId: string 
             Visuals & motion clips
           </h2>
           <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">Generate all visuals</span>{" "}
-            walks every [VIS] line (Imagen stills).{" "}
-            <span className="font-medium text-foreground">Generate clips</span> runs
-            ffmpeg Ken Burns + narration per block (needs still + audio). See{" "}
+            <span className="font-medium text-foreground">Generate stills</span>{" "}
+            walks every [VIS] beat (Imagen stills).{" "}
+            <span className="font-medium text-foreground">Generate clips</span> renders
+            one Ken Burns clip per visual beat (phrase-timed audio slice). See{" "}
             <code className="rounded bg-black/30 px-1 py-px text-[10px] text-foreground">
               src/prompts/README.md
             </code>
@@ -80,7 +88,17 @@ export function StudioVisualsWorkspace({ videoId: _videoId }: { videoId: string 
               ? progress
                 ? `Generating ${progress.done}/${progress.total}…`
                 : "Generating…"
-              : `Generate all visuals (${readyCount} ready)`}
+              : `Generate stills (${readyCount} ready)`}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 w-full shrink-0 text-xs sm:h-8 sm:shrink-0"
+            disabled={refreshPending || pending || clipsPending}
+            onClick={() => void refreshStudioVisuals()}
+          >
+            {refreshPending ? "Refreshing…" : "Refresh"}
           </Button>
           <Button
             type="button"
@@ -116,7 +134,17 @@ export function StudioVisualsWorkspace({ videoId: _videoId }: { videoId: string 
         </div>
       </div>
 
-      {genError ? (
+      {batchReport ? (
+        <VisBatchReportPanel
+          className="mt-2"
+          report={batchReport}
+          retryCount={retryCount}
+          pending={pending}
+          minWords={visStillMinWords}
+          onRetry={() => void runFailedOrMissing()}
+          onDismiss={dismissBatchReport}
+        />
+      ) : genError ? (
         <p role="alert" className="mt-2 text-xs text-destructive leading-snug">
           {genError}
         </p>

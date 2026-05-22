@@ -1,22 +1,36 @@
-# Prompt layers (Upgrade Life)
+# Prompt layers (Upgrade Life — v5)
 
 Each layer has **one job**. Do not duplicate long rules across layers—update **one** file, then rely on pointers below.
 
 | Layer | File(s) | Responsibility |
 |-------|-----------|------------------|
-| **A — Content Architect system** | `src/prompts/content-architect/` | Role, brand, persona, pillars, visual language references, **and** how each JSON field should read. Assembled by `build-system-instruction.ts`. |
-| **B — Response schema** | `src/app/actions/content-architect.ts` (`IDEA_SCHEMA`) | **Technical** constraints only (length hints, enums, “see system §…”). **Not** a second copy of art direction. |
+| **A — Content Architect system** | `src/prompts/content-architect/` | Role, brand, persona, psychology sub-themes, visual language references, **and** how each JSON field should read. Assembled by `build-system-instruction.ts`. |
+| **B — Response schema** | `src/app/actions/content-architect.ts` (`IDEA_SCHEMA`) | **Technical** constraints only (length hints, enums, "see system §…"). **Not** a second copy of art direction. |
 | **C — User message** | `src/app/actions/content-architect.ts` (dynamic `userText`) | Producer **topics** + **count** + reminder to follow the system instruction only. |
 | **D — Imagen (pixels only)** | `src/prompts/thumbnail/build-imagen-prompt.ts` | **Visualist** scene assembly: opening still line + `visualDescription` + overlay. Pulls `channel-visual-style`, `channel-palette`, `host-model-sheet`—no title/hook rules. |
-| **E — Human DNA** | `Upgrade_Life_Final_DNA_v4.txt` | Brand source of truth for humans; AI strings are derived here but live in code for assembly. |
-| **F — Lead Scriptwriter system** | `src/prompts/script-writer/build-system-instruction.ts` | Long-form four-act script + phrase-to-frame rules. User message in `script-writer.ts` (brief only). |
+| **E — Brand DNA** | `Upgrade_Life_DNA_v5.txt` | Brand source of truth for humans; AI strings are derived here but live in code for assembly. |
+| **F — Lead Scriptwriter system** | `src/prompts/script-writer/build-system-instruction.ts` | Long-form four-act script + phrase-to-frame rhythm + pause markers for TTS. **No** visual style or palette injections (rendering is Layer D's job). User message in `script-writer.ts` (brief only). |
 | **G — Script JSON schema** | `src/app/actions/script-writer.ts` | Structure only (acts, blocks, bridges); semantics in layer F. |
-| **H — Vocal DNA (TTS)** | `src/prompts/vocal-dna.ts` + `src/prompts/narration-tts-act-notes.ts` | Global performance instructions + **per-act** director addenda for chunked Gemini TTS (`generate-narration-tts.ts`). |
+| **H — Vocal DNA (TTS)** | `src/prompts/vocal-dna.ts` + `src/prompts/narration-tts-act-notes.ts` | Global performance instructions + **per-act** director addenda for chunked Gemini TTS (`generate-narration-tts.ts`). Honors `...` and `—` pause markers from scripts. |
+
+## Channel thesis (v5)
+
+Every video argues from: **"Your life isn't complicated — you are."** This is injected into Layers A and F via `CHANNEL_THESIS` from `src/lib/channel-dna.ts`.
+
+## Psychology sub-themes (v5, replaces four broad pillars)
+
+All five live under one roof: **psychology and mindset**.
+- `overthinking` — Decision paralysis, rumination
+- `emotional_armor` — Anxiety, anger, emotional regulation
+- `identity_clarity` — Self-knowledge, values, purpose
+- `social_dynamics` — Relationships through a psychology lens
+- `habit_architecture` — Building/breaking habits via behavioral psychology
 
 ## Shared constants
 
 - `src/prompts/shared/host-model-sheet.ts` — **Single** mentor identity string for Content Architect prose, Imagen `CHARACTER LOCK`, and Lead Scriptwriter **[VIS]** lines.
-- `src/lib/channel-visual-style.ts` + `src/lib/channel-palette.ts` — **Visualist** comic language + Cyber-Stoic palette (thumbnails + script **[VIS]** stills).
+- `src/lib/channel-visual-style.ts` + `src/lib/channel-palette.ts` — **Visualist** comic language + Cyber-Stoic palette (thumbnails + script **[VIS]** stills). Injected in Layers A and D **only** (not in the Scriptwriter — that's deliberate context pruning).
+- `src/lib/channel-dna.ts` — Version, source file, **thesis** string, reference image.
 
 ## Imports elsewhere
 

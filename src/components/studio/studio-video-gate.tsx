@@ -7,7 +7,11 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import { SectionContainer } from "@/components/landing/section-container";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getCommissionedVideo } from "@/lib/home/commissioned-videos-storage";
+import {
+  getCommissionedVideo,
+  upsertCommissionedVideo,
+} from "@/lib/home/commissioned-videos-storage";
+import type { CommissionedVideo } from "@/lib/home/commissioned-videos-storage";
 import {
   CHANNEL_DESK_UPCOMING_HREF,
   CHANNEL_DESK_VIDEOS_HREF,
@@ -25,11 +29,45 @@ export function StudioVideoGate({
   const [state, setState] = useState<GateState>("loading");
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      const row = getCommissionedVideo(videoId);
+    let cancelled = false;
+
+    const finish = (row: CommissionedVideo | null) => {
+      if (cancelled) return;
       setState(row ? "ok" : "missing");
-    });
-    return () => cancelAnimationFrame(id);
+    };
+
+    const local = getCommissionedVideo(videoId);
+    if (local) {
+      finish(local);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/studio/episodes/${encodeURIComponent(videoId)}`,
+          { cache: "no-store" },
+        );
+        const data = (await res.json()) as {
+          ok?: boolean;
+          video?: CommissionedVideo;
+        };
+        if (res.ok && data.ok && data.video) {
+          upsertCommissionedVideo(data.video);
+          finish(data.video);
+          return;
+        }
+      } catch {
+        /* local assets API unavailable */
+      }
+      finish(null);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [videoId]);
 
   if (state === "loading") {
@@ -67,8 +105,12 @@ export function StudioVideoGate({
               </h2>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                 The link may be wrong, or this browser no longer has that commission
-                (for example after clearing site data). Productions are stored locally
-                until you connect a backend.
+                (for example after clearing site data). If assets exist on disk, ensure
+                the dev server has{" "}
+                <code className="rounded bg-muted/50 px-1 text-[11px]">
+                  UPGRADE_LIFE_LOCAL_ASSETS_ROOT
+                </code>{" "}
+                set and refresh this page.
               </p>
             </div>
           </div>

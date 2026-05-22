@@ -10,7 +10,10 @@ import { cn } from "@/lib/utils";
 type VisQueueMotionPreviewProps = {
   videoId: string;
   actId: string;
-  blockIndex: number;
+  /** Motion storage index (baseBlock×100+beat) passed to the motion API. */
+  motionStorageIndex: number;
+  /** Display-only block number in UI. */
+  baseBlockIndex?: number;
   still: ListedVisStill | undefined;
   segment: ListedNarrationSegment | undefined;
   short: boolean;
@@ -22,13 +25,15 @@ type VisQueueMotionPreviewProps = {
 export function VisQueueMotionPreview({
   videoId,
   actId,
-  blockIndex,
+  motionStorageIndex,
+  baseBlockIndex,
   still,
   segment,
   short,
   clipsVersion = 0,
   className,
 }: VisQueueMotionPreviewProps) {
+  const blockLabel = (baseBlockIndex ?? Math.floor(motionStorageIndex / 100)) + 1;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [motionFailed, setMotionFailed] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -42,12 +47,12 @@ export function VisQueueMotionPreview({
     return motionPreviewUrl({
       videoId,
       actId,
-      blockIndex,
+      motionStorageIndex,
       stillUpdatedAt: still.updatedAt,
       segmentUpdatedAt: segment.updatedAt,
       clipsVersion,
     });
-  }, [videoId, actId, blockIndex, still, segment, clipsVersion]);
+  }, [videoId, actId, motionStorageIndex, still, segment, clipsVersion]);
 
   useEffect(() => {
     setMotionFailed(false);
@@ -141,7 +146,7 @@ export function VisQueueMotionPreview({
       }}
       role="button"
       tabIndex={0}
-      aria-label={`Play motion preview for block ${blockIndex + 1}`}
+      aria-label={`Play motion preview for block ${blockLabel}`}
     >
       <video
         ref={videoRef}
@@ -150,7 +155,6 @@ export function VisQueueMotionPreview({
         poster={poster}
         muted
         playsInline
-        loop
         autoPlay
         preload="auto"
         onPlay={() => setIsPlaying(true)}
@@ -159,7 +163,7 @@ export function VisQueueMotionPreview({
           setMotionFailed(true);
           setIsPlaying(false);
         }}
-        aria-label={`Motion preview for block ${blockIndex + 1}`}
+        aria-label={`Motion preview for block ${blockLabel}`}
       />
       {!isPlaying ? (
         <span

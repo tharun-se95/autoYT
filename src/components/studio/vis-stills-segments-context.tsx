@@ -19,7 +19,7 @@ type VisStillsSegmentsContextValue = {
   videoId: string;
   stills: ListedVisStill[];
   loadError: string | null;
-  reloadStills: () => Promise<void>;
+  reloadStills: () => Promise<ListedVisStill[]>;
 };
 
 const VisStillsSegmentsContext =
@@ -52,6 +52,9 @@ export function VisStillsSegmentsProvider({
     for (const act of script.acts) {
       for (const b of act.narrationBlocks) {
         visChars += b.visualDescription?.length ?? 0;
+        for (const beat of b.visualBeats ?? []) {
+          visChars += beat.phrase.length + beat.visualDescription.length;
+        }
       }
     }
     return `${script.workingTitle}|${blocks.length}|${narLens}|vis:${visChars}`;
@@ -60,7 +63,7 @@ export function VisStillsSegmentsProvider({
   const [stills, setStills] = useState<ListedVisStill[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const reloadStills = useCallback(async () => {
+  const reloadStills = useCallback(async (): Promise<ListedVisStill[]> => {
     void scriptFingerprint;
     setLoadError(null);
     try {
@@ -75,12 +78,14 @@ export function VisStillsSegmentsProvider({
       if (!r.ok || !d.ok || !Array.isArray(d.stills)) {
         setLoadError(d.error || `Could not load stills (${r.status}).`);
         setStills([]);
-        return;
+        return [];
       }
       setStills(d.stills);
+      return d.stills;
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Load failed.");
       setStills([]);
+      return [];
     }
   }, [videoId, scriptFingerprint]);
 

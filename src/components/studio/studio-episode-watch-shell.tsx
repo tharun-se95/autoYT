@@ -21,6 +21,8 @@ import {
   useNarrationAudioSegments,
 } from "@/components/studio/narration-audio-segments-context";
 import { StudioMediaStatusBanner } from "@/components/studio/studio-media-status-banner";
+import { NarrationBlockCard } from "@/components/studio/narration-block-card";
+import { VisBatchReportPanel } from "@/components/studio/vis-batch-report-panel";
 import { NarrationMiniAudio } from "@/components/studio/narration-mini-audio";
 import { ThumbnailImagePreview } from "@/components/studio/thumbnail-image-preview";
 import { StudioAssemblyPreviewPlayer } from "@/components/studio/studio-assembly-preview-player";
@@ -47,10 +49,14 @@ import {
 import { CHANNEL_DESK_VIDEOS_HREF } from "@/lib/nav/channel-desk";
 import { VOCAL_DNA_STUDIO_SUMMARY } from "@/prompts/vocal-dna";
 import { LEAD_SCRIPTWRITER_SYSTEM } from "@/prompts/script-writer/build-system-instruction";
+import { validateScriptBlockOpenings } from "@/lib/script-writer/validate-block-openings";
 import { countNarrationWords } from "@/lib/script-writer/format-tagged";
+import { stillMatchesVisBeat } from "@/lib/script-writer/vis-block-index";
+import { visStillStorageKey } from "@/lib/studio/vis-batch-report";
 import { listNarrationBlocksForTts } from "@/lib/script-writer/narration-for-tts";
 import { extractVisQueueFromScript } from "@/lib/script-writer/extract-vis-queue";
-import { VIS_STILL_MIN_CHARS } from "@/lib/studio/vis-still-limits";
+import { listAssemblyBeats } from "@/lib/studio/assembly-beats";
+import { visStillDescriptionShortfall } from "@/lib/studio/vis-still-limits";
 import type { ContentPillar } from "@/lib/content-architect/types";
 import {
   AUDIO_DRAFT_UPDATED_EVENT,
@@ -62,10 +68,11 @@ import {
 const PROMPT_EXCERPT_LEN = 960;
 
 const PILLAR_LABEL: Record<ContentPillar, string> = {
-  modern_mind: "A clear mind",
-  sorted_finance: "Financial peace",
-  biological_reset: "Personal habits",
-  relationship_engineering: "Human connections",
+  overthinking: "Overthinking",
+  emotional_armor: "Emotional armor",
+  identity_clarity: "Identity clarity",
+  social_dynamics: "Social dynamics",
+  habit_architecture: "Habit architecture",
 };
 
 function stageFromPath(pathname: string): "script" | "audio" | "visuals" {
@@ -220,6 +227,8 @@ function ScriptDetailsBlock({ videoId }: { videoId: string }) {
     submitGenerate,
   } = useScriptDraft();
 
+  const openingIssues = script ? validateScriptBlockOpenings(script) : [];
+
   if (!video) return null;
   const excerpt =
     LEAD_SCRIPTWRITER_SYSTEM.length > PROMPT_EXCERPT_LEN
@@ -318,8 +327,10 @@ function ScriptDetailsBlock({ videoId }: { videoId: string }) {
               </label>
               <p className="text-[10px] leading-snug text-muted-foreground sm:text-[11px]">
                 Four acts (~2k words),{" "}
-                <strong className="font-medium text-foreground">[NAR]/[VIS]</strong>{" "}
-                pairs and a curiosity bridge per act.
+                <strong className="font-medium text-foreground">[NAR]</strong> blocks with{" "}
+                <strong className="font-medium text-foreground">phrase-timed visual beats</strong>{" "}
+                (~5s max each; more on long blocks; first beat = opening words — A/V starts together), plus a
+                curiosity bridge per act.
               </p>
               <Textarea
                 id="episode-brief"
@@ -343,6 +354,16 @@ function ScriptDetailsBlock({ videoId }: { videoId: string }) {
             {error ? (
               <p role="alert" className="text-xs text-destructive leading-snug">
                 {error}
+              </p>
+            ) : null}
+            {openingIssues.length > 0 ? (
+              <p
+                role="status"
+                className="text-xs text-amber-600 dark:text-amber-400 leading-snug"
+              >
+                {openingIssues.length} block
+                {openingIssues.length === 1 ? "" : "s"} do not open on the first
+                visual phrase — regenerate or edit before saving to disk.
               </p>
             ) : null}
           </form>
@@ -589,8 +610,8 @@ function VisualsDetailsBlock({ videoId }: { videoId: string }) {
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
           <p className="max-w-prose text-xs text-muted-foreground leading-snug">
-            Thumbnails, b-roll, and [VIS] stills — batch tools in the Visuals tab;
-            per-shot work happens in the Narration column.
+            One Imagen still per visual beat (count scales with block length; ~5s max per beat). Batch tools live in
+            the Visuals tab; per-beat work happens in the Narration column.
           </p>
           <div className="flex flex-wrap gap-1.5">
             <Link
@@ -641,14 +662,6 @@ function NarrationColumn({
     }
     return m;
   }, [segments]);
-
-  const stillByActBlock = useMemo(() => {
-    const m = new Map<string, (typeof stills)[number]>();
-    for (const s of stills) {
-      m.set(`${s.actId}:${s.blockIndex}`, s);
-    }
-    return m;
-  }, [stills]);
 
   const generateVisStill = async (
     actId: string,
@@ -742,8 +755,8 @@ function NarrationColumn({
               Narration
             </h2>
             <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Four-act script with [NAR] / [VIS] lines, optional TTS clips, and image
-              previews per block.
+              Four-act script: [NAR] blocks (3–6 sentences), [VIS] beats scaled to narration length, TTS per block, and
+              stills / motion previews per beat.
             </p>
             {segmentLoadError ? (
               <p
@@ -810,153 +823,31 @@ function NarrationColumn({
                 </div>
               </summary>
               <div className="flex flex-col gap-2 border-t border-white/10 px-2 pb-2 pt-2 sm:px-2.5">
-                {act.narrationBlocks.map((block, i) => {
-                  const seg = segmentByActBlock.get(`${act.actId}:${i}`);
-                  const still = stillByActBlock.get(`${act.actId}:${i}`);
-                  const hasNarration = block.narration.trim().length > 0;
-                  const audioSrc = seg
-                    ? `${seg.fileUrl}&v=${encodeURIComponent(seg.updatedAt)}`
-                    : "";
-                  const visText = block.visualDescription.trim();
-                  const visShort = visText.length > 0 && visText.length < VIS_STILL_MIN_CHARS;
-                  const visBusy = visBusyKey === `${act.actId}-${i}`;
-                  const thumbSrc = still
-                    ? `${still.fileUrl}&v=${encodeURIComponent(still.updatedAt)}`
-                    : "";
-                  const previewTitle = `${act.displayTitle} · block ${i + 1} · [VIS]`;
-                  const blockKey = `${act.actId}-${i}`;
-                  const visErr = visBlockErrors[blockKey];
-                  return (
-                    <div
-                      id={`nar-vis-${act.actId}-${i}`}
-                      key={`${act.actId}-${i}`}
-                      className="flex flex-col gap-1 border-b border-white/10 pb-2 last:border-b-0 last:pb-0 scroll-mt-14"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-mono text-[8px] font-medium uppercase tracking-wide text-muted-foreground">
-                          Block {i + 1}
-                        </p>
-                        <span className="text-[9px] font-medium text-muted-foreground/90">
-                          [NAR]
-                        </span>
-                      </div>
-                      <p className="text-[11px] leading-snug text-foreground">
-                        {block.narration}
-                      </p>
-                      {hasNarration ? (
-                        seg ? (
-                          <NarrationMiniAudio className="mt-0.5" src={audioSrc} />
-                        ) : (
-                          <p className="mt-0.5 text-[9px] leading-snug text-muted-foreground">
-                            No clip —{" "}
-                            <span className="font-medium text-foreground">
-                              Generate all narration blocks
-                            </span>{" "}
-                            on Audio.
-                          </p>
-                        )
-                      ) : (
-                        <p className="mt-0.5 text-[9px] text-muted-foreground leading-snug">
-                          Empty narration slot.
-                        </p>
-                      )}
-                      <div className="mt-1 border-t border-white/[0.06] pt-1.5">
-                        <p className="text-[9px] font-medium text-muted-foreground/90">
-                          [VIS]
-                        </p>
-                        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-                          {block.visualDescription}
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2 pt-1.5 sm:flex-row sm:items-start">
-                        <div
-                          className={cn(
-                            "w-full max-w-[180px] shrink-0 overflow-hidden rounded border border-white/10",
-                            visBusy && "animate-pulse",
-                          )}
-                        >
-                          {still ? (
-                            showMotionClips && seg ? (
-                              <VisQueueMotionPreview
-                                videoId={videoId}
-                                actId={act.actId}
-                                blockIndex={i}
-                                still={still}
-                                segment={seg}
-                                short={visShort}
-                                clipsVersion={clipsVersion}
-                                className="max-w-none w-full rounded-sm"
-                              />
-                            ) : (
-                              <ThumbnailImagePreview
-                                src={thumbSrc}
-                                alt=""
-                                title={previewTitle}
-                                description="Full-size [VIS] still."
-                                frameClassName="aspect-video w-full overflow-hidden rounded-sm"
-                              />
-                            )
-                          ) : (
-                            <div
-                              className="flex aspect-video w-full items-center justify-center rounded border border-dashed border-white/12 bg-black/25"
-                              aria-hidden
-                            >
-                              <ImageIcon className="size-5 text-muted-foreground/70" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex min-w-0 flex-1 flex-col gap-1">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            className="h-7 w-fit px-2.5 text-[11px]"
-                            disabled={
-                              !visText || visShort || visBusy
-                            }
-                            onClick={() =>
-                              void generateVisStill(
-                                act.actId,
-                                i,
-                                block.visualDescription,
-                              )
-                            }
-                          >
-                            {visBusy
-                              ? "Generating…"
-                              : still
-                                ? "Regenerate image"
-                                : "Generate image"}
-                          </Button>
-                          {!visText ? (
-                            <p className="text-[9px] text-muted-foreground leading-snug">
-                              Empty [VIS] — add on Script stage.
-                            </p>
-                          ) : visShort ? (
-                            <p className="text-[9px] text-amber-400/90 leading-snug">
-                              Under {VIS_STILL_MIN_CHARS} chars — expand for a stronger
-                              prompt.
-                            </p>
-                          ) : (
-                            <p className="text-[9px] text-muted-foreground leading-snug">
-                              Thumbnail zooms on click. API + local assets — see README (
-                              <code className="text-foreground">src/prompts/README.md</code>
-                              ).
-                            </p>
-                          )}
-                          {visErr ? (
-                            <p
-                              role="alert"
-                              className="text-[9px] text-destructive leading-snug"
-                            >
-                              {visErr}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {act.narrationBlocks.map((block, i) => (
+                  <NarrationBlockCard
+                    key={`${act.actId}-${i}`}
+                    videoId={videoId}
+                    act={act}
+                    block={block}
+                    blockIndex={i}
+                    segment={segmentByActBlock.get(`${act.actId}:${i}`)}
+                    blockStill={stills.find(
+                      (s) =>
+                        s.actId === act.actId &&
+                        stillMatchesVisBeat(s.blockIndex, i, 0, {
+                          allowLegacyPlainIndex: !(
+                            block.visualBeats && block.visualBeats.length > 0
+                          ),
+                        }),
+                    )}
+                    stills={stills}
+                    showMotionClips={showMotionClips}
+                    clipsVersion={clipsVersion}
+                    visBusyKey={visBusyKey}
+                    visBlockErrors={visBlockErrors}
+                    onGenerateStill={generateVisStill}
+                  />
+                ))}
                 <div className="border-t border-primary/20 pt-1.5">
                   <p className="text-[9px] font-medium uppercase tracking-wide text-primary/90">
                     Curiosity bridge
@@ -1247,20 +1138,27 @@ function AudioStageAsideColumn({ videoId }: { videoId: string }) {
 function VisualsQueueAside({ videoId }: { videoId: string }) {
   const video = getCommissionedVideo(videoId);
   const { script } = useScriptDraft();
-  const { stills, loadError, reloadStills } = useVisStillsSegments();
+  const { stills, loadError } = useVisStillsSegments();
   const { segments } = useNarrationAudioSegments();
   const {
     readyCount,
     clipReadyCount,
     genError: batchGenError,
+    batchReport,
+    retryCount,
+    dismissBatchReport,
     clipError: batchClipError,
     pending: batchPending,
     progress: batchProgress,
     runAll: runAllVisuals,
+    runFailedOrMissing,
+    visStillMinWords,
     clipsPending,
     clipsProgress,
     runAllClips,
     clipsVersion,
+    refreshStudioVisuals,
+    refreshPending,
   } = useVisualsBatchGenerateContext();
 
   if (!video || !isAudioComplete(video)) {
@@ -1282,8 +1180,13 @@ function VisualsQueueAside({ videoId }: { videoId: string }) {
     );
   }
 
-  const items = extractVisQueueFromScript(script);
-  const stillByKey = useMemo(() => {
+  const visQueue = extractVisQueueFromScript(script);
+  const assemblyBeats = useMemo(
+    () => listAssemblyBeats(script, segments, stills),
+    [script, segments, stills],
+  );
+
+  const stillByStorageKey = useMemo(() => {
     const m = new Map<string, (typeof stills)[number]>();
     for (const s of stills) {
       m.set(`${s.actId}:${s.blockIndex}`, s);
@@ -1291,40 +1194,45 @@ function VisualsQueueAside({ videoId }: { videoId: string }) {
     return m;
   }, [stills]);
 
-  const segmentByKey = useMemo(() => {
-    const m = new Map<string, (typeof segments)[number]>();
-    for (const s of segments) {
-      m.set(`${s.actId}:${s.blockIndex}`, s);
-    }
-    return m;
-  }, [segments]);
-
   const savedVisCount = useMemo(
     () =>
-      items.filter((it) => stillByKey.has(`${it.actId}:${it.blockIndex}`))
-        .length,
-    [items, stillByKey],
+      visQueue.filter((it) =>
+        stillByStorageKey.has(
+          visStillStorageKey(it.actId, it.blockIndex, it.beatIndex),
+        ),
+      ).length,
+    [visQueue, stillByStorageKey],
   );
 
-  const jumpToBlock = (actId: string, blockIndex: number) => {
-    const el = document.getElementById(`nar-vis-${actId}-${blockIndex}`);
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const jumpToBeat = (
+    actId: string,
+    blockIndex: number,
+    beatIndex: number,
+  ) => {
+    const beatEl = document.getElementById(
+      `nar-vis-${actId}-${blockIndex}-beat-${beatIndex}`,
+    );
+    const blockEl = document.getElementById(`nar-vis-${actId}-${blockIndex}`);
+    (beatEl ?? blockEl)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
     <aside className="flex flex-col gap-2" aria-label="Visual prompts from script">
       <StudioStageSection
         title="Shot progress"
-        description="Ken Burns clips play when in view (scroll the list); click a preview if needed"
+        description="One Ken Burns clip per visual beat, timed to phrase length in the narration"
         defaultOpen
       >
         <div className="mb-2 flex flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            {items.length > 0 ? (
+            {visQueue.length > 0 ? (
               <p className="text-[11px] text-muted-foreground">
                 <span className="font-medium text-foreground">{savedVisCount}</span>
                 {" / "}
-                <span className="text-foreground">{items.length}</span> stills saved
+                <span className="text-foreground">{visQueue.length}</span> stills saved
+                {" · "}
+                <span className="font-medium text-foreground">{assemblyBeats.length}</span>{" "}
+                clips ready
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground">No shots yet</p>
@@ -1342,7 +1250,17 @@ function VisualsQueueAside({ videoId }: { videoId: string }) {
                 ? batchProgress
                   ? `Generating ${batchProgress.done}/${batchProgress.total}…`
                   : "Generating…"
-                : `Generate all visuals (${readyCount} ready)`}
+                : `Generate stills (${readyCount} ready)`}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 text-[10px]"
+              disabled={batchPending || clipsPending || refreshPending}
+              onClick={() => void refreshStudioVisuals()}
+            >
+              {refreshPending ? "Refreshing…" : "Refresh"}
             </Button>
             <Button
               type="button"
@@ -1358,24 +1276,40 @@ function VisualsQueueAside({ videoId }: { videoId: string }) {
                   : "Rendering clips…"
                 : `Generate clips (${clipReadyCount} ready)`}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 shrink-0 text-[10px]"
-              disabled={batchPending || clipsPending}
-              onClick={() => void reloadStills()}
-            >
-              Refresh
-            </Button>
+            {retryCount > 0 ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-8 flex-1 text-[11px] sm:flex-none sm:px-3"
+                disabled={batchPending || clipsPending}
+                onClick={() => void runFailedOrMissing()}
+              >
+                {batchPending
+                  ? "Retrying…"
+                  : `Retry failed & missing (${retryCount})`}
+              </Button>
+            ) : null}
           </div>
         </div>
+        {batchReport ? (
+          <VisBatchReportPanel
+            className="mb-2"
+            compact
+            report={batchReport}
+            retryCount={retryCount}
+            pending={batchPending}
+            minWords={visStillMinWords}
+            onRetry={() => void runFailedOrMissing()}
+            onDismiss={dismissBatchReport}
+          />
+        ) : null}
         {loadError ? (
           <p role="alert" className="mb-2 text-[10px] text-destructive leading-snug">
             {loadError}
           </p>
         ) : null}
-        {batchGenError ? (
+        {batchReport ? null : batchGenError ? (
           <p role="alert" className="mb-2 text-[10px] text-destructive leading-snug">
             {batchGenError}
           </p>
@@ -1385,42 +1319,87 @@ function VisualsQueueAside({ videoId }: { videoId: string }) {
             {batchClipError}
           </p>
         ) : null}
-        {items.length === 0 ? (
+        {assemblyBeats.length === 0 ? (
           <p className="rounded-md border border-dashed border-white/15 p-2.5 text-[11px] leading-snug text-muted-foreground">
-            No [VIS] lines yet. Generate a script on the Script stage first.
+            No visual beats yet. Generate a script on the Script stage first.
           </p>
         ) : (
           <ul className="flex max-h-[min(70vh,32rem)] flex-col gap-2 overflow-y-auto pr-0.5">
-            {items.map((item, idx) => {
-              const mapKey = `${item.actId}:${item.blockIndex}`;
-              const still = stillByKey.get(mapKey);
-              const seg = segmentByKey.get(mapKey);
+            {assemblyBeats.map((item, idx) => {
               const short =
-                item.visualDescription.trim().length < VIS_STILL_MIN_CHARS;
+                visStillDescriptionShortfall(item.visualDescription) !== null;
+              const itemKey = visStillStorageKey(
+                item.actId,
+                item.baseBlockIndex,
+                item.beatIndex,
+              );
+              const batchFailed = batchReport?.failed.find(
+                (f) =>
+                  visStillStorageKey(
+                    f.item.actId,
+                    f.item.blockIndex,
+                    f.item.beatIndex,
+                  ) === itemKey,
+              );
+              const batchMissing = batchReport?.missing.some(
+                (m) =>
+                  visStillStorageKey(m.actId, m.blockIndex, m.beatIndex) ===
+                  itemKey,
+              );
               return (
                 <li
-                  key={`${item.actId}-${item.blockIndex}-${idx}`}
-                  className="flex flex-col gap-2 rounded-md border border-white/10 bg-white/[0.03] p-2 sm:flex-row sm:items-center sm:gap-2"
+                  key={`${item.actId}-${item.motionStorageIndex}-${idx}`}
+                  className={cn(
+                    "flex flex-col gap-2 rounded-md border bg-white/[0.03] p-2 sm:flex-row sm:items-start sm:gap-2",
+                    batchFailed
+                      ? "border-destructive/40 ring-1 ring-destructive/20"
+                      : batchMissing
+                        ? "border-amber-500/40 ring-1 ring-amber-500/20"
+                        : "border-white/10",
+                  )}
                 >
                   <VisQueueMotionPreview
                     videoId={videoId}
                     actId={item.actId}
-                    blockIndex={item.blockIndex}
-                    still={still}
-                    segment={seg}
+                    motionStorageIndex={item.motionStorageIndex}
+                    baseBlockIndex={item.baseBlockIndex}
+                    still={item.still}
+                    segment={item.segment}
                     short={short}
                     clipsVersion={clipsVersion}
                   />
-                  <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                    <span className="min-w-0 truncate text-[10px] text-muted-foreground">
-                      {item.actTitle} · block {item.blockIndex + 1}
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="text-[10px] font-medium text-foreground">
+                      {item.actTitle} · block {item.baseBlockIndex + 1} · beat{" "}
+                      {item.beatIndex + 1}
                     </span>
+                    <span
+                      className="line-clamp-2 text-[10px] text-muted-foreground"
+                      title={item.visualDescription}
+                    >
+                      “{item.phrase}” — {item.visualDescription}
+                    </span>
+                    {batchFailed ? (
+                      <span className="text-[9px] text-destructive leading-snug">
+                        Failed: {batchFailed.error}
+                      </span>
+                    ) : batchMissing ? (
+                      <span className="text-[9px] text-amber-400/95 leading-snug">
+                        Still missing after batch — use Retry below
+                      </span>
+                    ) : null}
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-7 shrink-0 px-2 text-[10px]"
-                      onClick={() => jumpToBlock(item.actId, item.blockIndex)}
+                      className="h-7 w-fit px-2 text-[10px]"
+                      onClick={() =>
+                        jumpToBeat(
+                          item.actId,
+                          item.baseBlockIndex,
+                          item.beatIndex,
+                        )
+                      }
                     >
                       Jump
                     </Button>

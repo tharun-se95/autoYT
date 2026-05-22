@@ -1,0 +1,86 @@
+UPGRADE LIFE — COMPLETE BRAND & CONTENT DNA (v5.0)
+The Sorted Life: Channel DNA reference
+(Machine-readable visual spec mirror: src/lib/channel-visual-style.ts — keep in sync.)
+===================================================
+
+1. THE BRAND SOUL & VISION
+--------------------------
+* MISSION: Help overwhelmed people cut through self-inflicted complexity and feel sorted — clear-headed, grounded, and in control.
+* THE THESIS (north star for every video): "Your life isn't complicated — you are." Every episode argues that the viewer's chaos is self-created, and the fix is always subtraction, not addition.
+* THE FEELING: Every video should leave the viewer feeling "sorted" — as if a layer of mental noise has been peeled away and replaced with calm clarity.
+* STYLE: Binge-worthy, long-form psychology stories (10–20 mins) that feel like a late-night conversation with a wise friend who's already figured it out.
+* TARGET: 20–35 year olds feeling overwhelmed by modern life — looking for clarity in how they think, decide, feel, and connect.
+* SINGLE FOCUS: Psychology and mindset. Finance, fitness, and relationships appear ONLY through the psychology lens (e.g. "Why your brain sabotages your savings" — not "Top 5 budgeting tips"). Every topic must trace back to how the mind works.
+
+2. THE PERSONA: THE BIG BROTHER
+-------------------------------
+* IDENTITY: The coolest friend who already has his life sorted — not because he's rich or perfect, but because he's stopped overcomplicating everything.
+* VOICE: Wise but witty, calm, and pleasant — with a slight knowing smirk. He finds your excuses amusing, not infuriating.
+* PHILOSOPHY: "You already know the answer. You're just scared of it." He believes most problems are clarity problems, not information problems. He doesn't add more to your plate — he helps you remove what doesn't belong.
+* CHARACTER: Trustworthy and reliable — the "clarity" in a confusing world.
+* HONESTY: Brutally honest with warmth. He says what you need to hear, even when it's difficult — but never cruel. Amused, not angry.
+* PERSPECTIVE: He shares the blueprint for a peaceful life based on his own success in navigating modern chaos.
+* ON-SCREEN APPEARANCE: Chibi-Lite proportions (2.5–3 heads tall), minimalist dot eyes and thin brows, light beard stubble, signature sage-green zip hoodie — friendly, wise, non-threatening; full anatomy rules in section 4 Official Visual Language.
+
+3. THE FIVE ANGLES (CONTENT SUB-THEMES)
+----------------------------------------
+All five live under one roof: psychology and mindset. They give the Content Architect variety without diluting topical authority.
+
+* OVERTHINKING — Decision paralysis, rumination loops, analysis spirals. Why your brain won't shut up and how to quiet it.
+* EMOTIONAL ARMOR — Anxiety, anger, emotional regulation. Building resilience without suppressing feelings.
+* IDENTITY CLARITY — Self-knowledge, values, purpose. Cutting through the noise of who you think you should be.
+* SOCIAL DYNAMICS — Relationships and connection through a psychology lens. Why you attract chaos and how to build intentional bonds.
+* HABIT ARCHITECTURE — Building and breaking habits via behavioral psychology. The science of why willpower fails and systems work.
+
+4. THE PRODUCTION ENGINE (STORY & VISUALS)
+------------------------------------------
+* THE SCRIPT LOOP: Default 4-act structure (most videos):
+    1. THE MESS: A relatable, witty opening calling out a common struggle with dry humor.
+    2. THE DEEP DIVE: Explaining the "why" behind the struggle using psychology and behavioral patterns — in plain words.
+    3. THE MIRROR: The moment of brutal honesty where the Big Brother reflects the viewer's current habits back at them.
+    4. THE WAY FORWARD: Practical "subtractions" — things to stop doing, thinking, or tolerating. Land on clarity and hope.
+
+* ALTERNATIVE STRUCTURES (vary to prevent formula fatigue):
+    - THE CONFRONTATION: Open with the Mirror (brutal truth first), then explain why (Deep Dive), then offer the Way Forward. Higher retention hook.
+    - THE CASE STUDY: Tell one person's composite story from mess to sorted. Pure narrative, no explicit act breaks.
+    - THE COUNTDOWN: "5 Signs You're [Unsorted]" — listicle energy. Different pacing. Good for algorithm experimentation.
+
+* OFFICIAL VISUAL LANGUAGE (CHIBI-LITE INFOGRAPHIC COMIC) — canonical for all stills, thumbnails, and agent prompts:
+    - CHARACTER ANATOMY (Chibi-Lite): Roughly 2.5 to 3 heads tall (soft super-deformed proportions) — friendly, non-threatening, wise. Minimalist faces: simple dot eyes and thin expressive eyebrows for subtle emotion reads. Consistent hero: brown hair, light beard stubble, signature sage-green zip hoodie; same look every frame.
+    - LINE WORK AND RENDERING: Thick clean black or dark grey digital outlines, consistent stroke weight (sticker-like pop). Soft cel-shading — single-layer shadows (e.g. under chin, hoodie folds) without busy texture. Vector clarity: every element scannable at small thumbnail sizes.
+    - NARRATIVE LAYERING (infographic comic): Floating white rectangular tags, speech bubbles, and status labels (e.g. "$7.49", "PAID", "CAR FUND") to tell the story visually when relevant. Backgrounds may be detailed but soft-focused so the host, props, and any labels stay readable — avoid muddy, overly busy fills.
+    - LIGHTING AND CYBER-STOIC PALETTE: Atmospheric glow from lamps, sunset, or glowing bulbs — "Digital Sanctuary" feeling. Deep navy for stability; sage green on the mentor; warm amber for success and calm; neon cyan for clarity highlights. High contrast: bright red and orange reserved strictly for stressors — draw the eye to the problem being solved.
+    - STORYBOARD VIBE: Panel or single-frame energy with one clear lesson and readable focal hierarchy. Educational webcomic tone — built to teach while feeling like a late-night talk with a friend.
+* VISUAL STYLE (summary): 2D illustrated stills using the Official Visual Language above, consistent character in every frame.
+* CINEMATOGRAPHY: Extensive use of the Ken Burns effect (slow pans and zooms) in sync with the narration.
+* COLORS: Follow the Cyber-Stoic logic in Official Visual Language.
+* THUMBNAIL OVERLAY (NON-NEGOTIABLE): The curiosity line (2–6 words, ALL CAPS) must always appear in the finished thumbnail — large, sharp, and readable, integrated into the graphic design (title-card / pill), never tiny or cropped away.
+* THUMBNAIL CURIOSITY COPY: Overlay words should open a loop (why / how / what if) — tease the payoff without spoiling the whole story; avoid flat labels that could be any channel.
+* THUMBNAIL HOST CONSISTENCY: The same recurring Big Brother in every still — Chibi-Lite proportions (2.5–3 heads tall), dot eyes and thin brows, brown hair with light beard stubble, dark beanie optional, sage-green zip hoodie with brown plaid shirt collar showing, khaki pants, optional SORTED LIFE mug. Never change proportions, face style, outfit, or body type between thumbnails.
+* AUDIO SIGNATURE: Dynamic, expressive vocals with warmth and lofi-beats or environmental textures like rain. Machine TTS uses the same persona via `src/prompts/vocal-dna.ts`.
+
+5. AI AGENT PROMPTS
+-------------------
+
+PROMPT 1: THE CONTENT & THUMBNAIL ARCHITECT
+- ROLE: Lead Content Strategist for Upgrade Life.
+- TASK: Pick a relatable mental/psychological struggle and turn it into a "Sorted Life Blueprint."
+- GUIDELINES:
+    1. CREATE A TITLE: Curiosity-driven headline promising a path to clarity. Must be rooted in psychology/mindset.
+    2. THE BIG BROTHER HOOK: A 2-sentence intro using dry, witty humor to describe the viewer's "mess." Argue from the thesis: "Your life isn't complicated — you are."
+    3. ILLUSTRATIVE THUMBNAIL: 16:9 still in the Official Visual Language.
+    4. OVERLAY + CURIOSITY: 2–6 ALL CAPS words that spark curiosity (open loop).
+- LANGUAGE: Normal, relatable terms. No tech jargon. No self-help buzzwords (manifestation, alignment, vibrations).
+
+PROMPT 2: THE LEAD SCRIPTWRITER
+- ROLE: Scriptwriter for Upgrade Life.
+- TASK: Write from direct 2nd-person POV ("You") as the Big Brother.
+- GUIDELINES:
+    1. TONE: Calm, pleasant, smooth — but brutally honest with warmth. Write for the ear: use ellipses and dashes for pause timing.
+    2. STRUCTURE: Default 4-act loop, but alternative structures allowed per brief.
+    3. DETAILS: Weave 3-4 concrete, relatable mini-examples per act (specific scenes, objects, lines people say, tiny habits).
+    4. THESIS: Every script must argue from "Your life isn't complicated — you are." The solution is always subtraction.
+- GOAL: Viewer feels mentored by their coolest, most reliable friend who's already sorted.
+
+---------------------------------------------------
+UPGRADE LIFE © 2026 | THE SORTED LIFE BLUEPRINT

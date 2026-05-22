@@ -7,7 +7,17 @@ export function formatScriptAsNarVis(script: ScriptDocument): string {
     lines.push(`## ${act.displayTitle} (${act.actId})`, "");
     for (const block of act.narrationBlocks) {
       lines.push(`[NAR]: ${block.narration.trim()}`, "");
-      lines.push(`[VIS]: ${block.visualDescription.trim()}`, "");
+      const beats = block.visualBeats ?? [];
+      if (beats.length > 0) {
+        beats.forEach((beat, bi) => {
+          lines.push(
+            `[VIS beat ${bi + 1}] (${beat.phrase.trim()}): ${beat.visualDescription.trim()}`,
+            "",
+          );
+        });
+      } else if (block.visualDescription?.trim()) {
+        lines.push(`[VIS]: ${block.visualDescription.trim()}`, "");
+      }
     }
     lines.push(`[BRIDGE]: ${act.curiosityBridge.trim()}`, "");
     lines.push("---", "");

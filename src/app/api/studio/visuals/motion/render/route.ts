@@ -5,7 +5,10 @@ import {
   checkFfmpegAvailable,
   checkFfprobeAvailable,
 } from "@/lib/studio/ffmpeg-vis-motion";
-import { renderVisMotionBlock } from "@/lib/studio/render-vis-motion-block";
+import { listAssemblyBeats } from "@/lib/studio/assembly-beats";
+import { parseMotionStorageIndex } from "@/lib/studio/beat-timings";
+import { renderVisMotionBeat } from "@/lib/studio/render-vis-motion-beat";
+import { loadScriptDocumentForVideo } from "@/lib/studio/load-script-document";
 import { listNarrationSegmentsForVideo } from "@/lib/studio-db/persist-narration-segment";
 import { listVisStillsForVideo } from "@/lib/studio-db/persist-vis-still";
 import type { ScriptActId } from "@/lib/script-writer/types";
@@ -24,6 +27,7 @@ function isActId(s: string): s is ScriptActId {
 type RenderBody = {
   videoId?: string;
   actId?: string;
+  /** Motion storage index (baseBlock×100+beat), not base block index only. */
   blockIndex?: number;
   force?: boolean;
 };
@@ -70,19 +74,15 @@ export async function POST(request: Request) {
   const blockIndex =
     body.blockIndex === undefined ? undefined : Number(body.blockIndex);
 
-  const [segments, stills] = await Promise.all([
+  const [script, segments, stills] = await Promise.all([
+    loadScriptDocumentForVideo(videoId),
     listNarrationSegmentsForVideo(videoId),
     listVisStillsForVideo(videoId),
   ]);
 
-  const stillByKey = new Map(
-    stills.map((s) => [`${s.actId}:${s.blockIndex}`, s] as const),
-  );
-  const segByKey = new Map(
-    segments.map((s) => [`${s.actId}:${s.blockIndex}`, s] as const),
-  );
+  const allBeats = listAssemblyBeats(script, segments, stills);
 
-  const targets: { actId: ScriptActId; blockIndex: number }[] = [];
+  let targets = allBeats;
 
   if (actIdRaw !== undefined && blockIndex !== undefined) {
     if (!isActId(actIdRaw)) {
@@ -90,28 +90,25 @@ export async function POST(request: Request) {
     }
     if (!Number.isInteger(blockIndex) || blockIndex < 0) {
       return NextResponse.json(
-        { ok: false, error: "Invalid blockIndex." },
+        { ok: false, error: "Invalid blockIndex (motion storage index)." },
         { status: 400 },
       );
     }
-    targets.push({ actId: actIdRaw, blockIndex });
+    const { baseBlockIndex, beatIndex } = parseMotionStorageIndex(blockIndex);
+    targets = allBeats.filter(
+      (b) =>
+        b.actId === actIdRaw &&
+        b.baseBlockIndex === baseBlockIndex &&
+        b.beatIndex === beatIndex,
+    );
   } else if (actIdRaw !== undefined || blockIndex !== undefined) {
     return NextResponse.json(
-      { ok: false, error: "Provide both actId and blockIndex, or neither for batch." },
+      {
+        ok: false,
+        error: "Provide both actId and blockIndex, or neither for batch.",
+      },
       { status: 400 },
     );
-  } else {
-    for (const key of stillByKey.keys()) {
-      if (!segByKey.has(key)) continue;
-      const [actId, idxStr] = key.split(":");
-      if (!isActId(actId)) continue;
-      targets.push({ actId, blockIndex: Number.parseInt(idxStr, 10) });
-    }
-    targets.sort((a, b) => {
-      const actCmp = ACT_IDS.indexOf(a.actId) - ACT_IDS.indexOf(b.actId);
-      if (actCmp !== 0) return actCmp;
-      return a.blockIndex - b.blockIndex;
-    });
   }
 
   if (targets.length === 0) {
@@ -123,7 +120,8 @@ export async function POST(request: Request) {
       cached: 0,
       failed: 0,
       results: [],
-      message: "No blocks with both a [VIS] still and narration audio.",
+      message:
+        "No beats with both a [VIS] still and narration audio. Generate visuals and audio first.",
     });
   }
 
@@ -132,26 +130,15 @@ export async function POST(request: Request) {
   let cached = 0;
   let failed = 0;
 
-  for (const { actId, blockIndex } of targets) {
-    const still = stillByKey.get(`${actId}:${blockIndex}`);
-    const segment = segByKey.get(`${actId}:${blockIndex}`);
-    if (!still || !segment) {
-      failed += 1;
-      results.push({
-        ok: false as const,
-        actId,
-        blockIndex,
-        error: "Missing still or narration for this block.",
-      });
-      continue;
-    }
-
-    const result = await renderVisMotionBlock({
+  for (const beat of targets) {
+    const result = await renderVisMotionBeat({
       videoId,
-      actId,
-      blockIndex,
-      still,
-      segment,
+      actId: beat.actId,
+      baseBlockIndex: beat.baseBlockIndex,
+      beatIndex: beat.beatIndex,
+      still: beat.still,
+      segment: beat.segment,
+      blockVisualBeats: beat.blockVisualBeats,
       force,
     });
 

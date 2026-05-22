@@ -11,11 +11,37 @@ import {
 } from "lucide-react";
 
 import { useVisualsBatchGenerateContext } from "@/components/studio/visuals-batch-generate-context";
-import { useAssemblyPlaylist } from "@/components/studio/use-assembly-playlist";
-import { useScriptDraft } from "@/components/studio/script-draft-context";
-import { useNarrationAudioSegments } from "@/components/studio/narration-audio-segments-context";
-import { useVisStillsSegments } from "@/components/studio/vis-stills-segments-context";
+import {
+  useAssemblyPlaylist,
+  type AssemblyPlaylistClipItem,
+  type AssemblyPlaylistGapItem,
+  type AssemblyPlaylistItem,
+} from "@/components/studio/use-assembly-playlist";
+import {
+  clearMotionClipPreloadCache,
+  useMotionClipPreload,
+} from "@/components/studio/use-motion-clip-preload";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+function clipSrc(item: AssemblyPlaylistClipItem): string {
+  return item.motionSrc;
+}
+
+function resolveSrc(src: string): string {
+  if (typeof window === "undefined") return src;
+  try {
+    return new URL(src, window.location.origin).href;
+  } catch {
+    return src;
+  }
+}
+
+function isClipReady(el: HTMLVideoElement, src: string): boolean {
+  const resolved = resolveSrc(src);
+  if (!el.src || el.src !== resolved) return false;
+  return el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
+}
 
 export function StudioAssemblyPreviewPlayer({
   videoId,
@@ -24,9 +50,6 @@ export function StudioAssemblyPreviewPlayer({
   videoId: string;
   workingTitle: string;
 }) {
-  const { script } = useScriptDraft();
-  const { segments } = useNarrationAudioSegments();
-  const { stills } = useVisStillsSegments();
   const {
     clipReadyCount,
     clipsVersion,
@@ -35,79 +58,332 @@ export function StudioAssemblyPreviewPlayer({
     exportPending,
     exportError,
     downloadAssemblyVideo,
+    refreshStudioVisuals,
+    refreshPending,
   } = useVisualsBatchGenerateContext();
 
-  const playlist = useAssemblyPlaylist(
-    script,
-    segments,
-    stills,
-    videoId,
-    clipsVersion,
-  );
+  const { items, clipCount, loadError: playlistError, reload } =
+    useAssemblyPlaylist(videoId, clipsVersion);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoARef = useRef<HTMLVideoElement>(null);
+  const videoBRef = useRef<HTMLVideoElement>(null);
+  const narrationAudioRef = useRef<HTMLAudioElement>(null);
+  const activeSlotRef = useRef<0 | 1>(0);
+  const gapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldAutoplayRef = useRef(false);
+  const indexRef = useRef(0);
+
   const [index, setIndex] = useState(0);
+  const [activeSlot, setActiveSlot] = useState<0 | 1>(0);
   const [playing, setPlaying] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [clipError, setClipError] = useState<string | null>(null);
 
-  const total = playlist.length;
+  const total = items.length;
   const safeIndex = total > 0 ? Math.min(index, total - 1) : 0;
-  const current = total > 0 ? playlist[safeIndex] : undefined;
+  const current: AssemblyPlaylistItem | undefined =
+    total > 0 ? items[safeIndex] : undefined;
+
+  indexRef.current = safeIndex;
+  useMotionClipPreload(items, safeIndex, clipsVersion);
+
+  const videoRef = (slot: 0 | 1) =>
+    slot === 0 ? videoARef : videoBRef;
+
+  const clearGapTimer = useCallback(() => {
+    if (gapTimerRef.current) {
+      clearTimeout(gapTimerRef.current);
+      gapTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     setIndex(0);
+    indexRef.current = 0;
+    activeSlotRef.current = 0;
+    setActiveSlot(0);
     setPlaying(false);
     shouldAutoplayRef.current = false;
     setClipError(null);
-  }, [clipsVersion, total]);
+    setBuffering(false);
+    clearGapTimer();
+    clearMotionClipPreloadCache();
+    for (const ref of [videoARef, videoBRef]) {
+      const el = ref.current;
+      if (el) {
+        el.pause();
+        el.removeAttribute("src");
+        el.load();
+      }
+    }
+  }, [clipsVersion, total, clearGapTimer]);
 
   useEffect(() => {
-    const el = videoRef.current;
-    const item = current;
-    if (!el || !item) return;
+    void reload();
+  }, [clipsVersion, reload]);
 
-    let cancelled = false;
-    setBuffering(true);
-    setClipError(null);
+  const goTo = useCallback(
+    (nextIndex: number, keepPlaying: boolean) => {
+      if (nextIndex < 0 || nextIndex >= total) return;
+      clearGapTimer();
+      shouldAutoplayRef.current = keepPlaying;
+      indexRef.current = nextIndex;
+      setIndex(nextIndex);
+      if (!keepPlaying) setPlaying(false);
+    },
+    [total, clearGapTimer],
+  );
 
-    const onCanPlay = () => {
-      if (cancelled) return;
-      setBuffering(false);
-      if (shouldAutoplayRef.current) {
-        void el.play()
-          .then(() => setPlaying(true))
-          .catch(() => {
-            setPlaying(false);
-            shouldAutoplayRef.current = false;
-          });
+  const advance = useCallback(
+    (keepPlaying: boolean) => {
+      const idx = indexRef.current;
+      if (idx < total - 1) {
+        goTo(idx + 1, keepPlaying);
+      } else {
+        setPlaying(false);
+        shouldAutoplayRef.current = false;
       }
-    };
+    },
+    [total, goTo],
+  );
 
-    const onError = () => {
-      if (cancelled) return;
-      setClipError(`Could not load clip ${safeIndex + 1} of ${total}.`);
-      setPlaying(false);
+  const swapToClip = useCallback(
+    async (
+      item: AssemblyPlaylistClipItem,
+      autoplay: boolean,
+      targetIndex: number,
+    ) => {
+      const src = resolveSrc(clipSrc(item));
+      const inactive: 0 | 1 = activeSlotRef.current === 0 ? 1 : 0;
+      const nextEl = videoRef(inactive).current;
+      const prevEl = videoRef(activeSlotRef.current).current;
+      if (!nextEl) return;
+
+      const startPlayback = () => {
+        if (indexRef.current !== targetIndex) return;
+        prevEl?.pause();
+        activeSlotRef.current = inactive;
+        setActiveSlot(inactive);
+        setBuffering(false);
+        if (autoplay) {
+          void nextEl
+            .play()
+            .then(() => {
+              if (indexRef.current !== targetIndex) {
+                nextEl.pause();
+                return;
+              }
+              setPlaying(true);
+            })
+            .catch(() => {
+              setPlaying(false);
+              shouldAutoplayRef.current = false;
+            });
+        } else {
+          nextEl.pause();
+          setPlaying(false);
+        }
+      };
+
+      if (isClipReady(nextEl, clipSrc(item))) {
+        startPlayback();
+        return;
+      }
+
+      setBuffering(true);
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          let settled = false;
+          const finish = (fn: () => void) => {
+            if (settled) return;
+            settled = true;
+            nextEl.removeEventListener("canplaythrough", onReady);
+            nextEl.removeEventListener("error", onError);
+            fn();
+          };
+          const onReady = () => finish(resolve);
+          const onError = () =>
+            finish(() => reject(new Error(`Load failed: ${item.label}`)));
+
+          if (nextEl.src !== src) {
+            nextEl.src = src;
+            nextEl.load();
+          } else {
+            nextEl.load();
+          }
+
+          if (isClipReady(nextEl, clipSrc(item))) {
+            finish(resolve);
+            return;
+          }
+
+          nextEl.addEventListener("canplaythrough", onReady, { once: true });
+          nextEl.addEventListener("error", onError, { once: true });
+        });
+        startPlayback();
+      } catch (e) {
+        if (indexRef.current !== targetIndex) return;
+        setClipError(
+          e instanceof Error
+            ? e.message
+            : `Could not load clip (${item.label}). Run Generate clips, then Refresh.`,
+        );
+        setPlaying(false);
+        setBuffering(false);
+        shouldAutoplayRef.current = false;
+      }
+    },
+    [],
+  );
+
+  const playGapNarration = useCallback(
+    async (
+      item: AssemblyPlaylistGapItem,
+      autoplay: boolean,
+      targetIndex: number,
+    ) => {
+      const audio = narrationAudioRef.current;
+      videoARef.current?.pause();
+      videoBRef.current?.pause();
+      if (!audio) return;
+
       setBuffering(false);
-      shouldAutoplayRef.current = false;
-    };
+      setClipError(null);
+      clearGapTimer();
 
-    el.src = item.motionSrc;
-    el.load();
-    el.addEventListener("canplay", onCanPlay, { once: true });
-    el.addEventListener("error", onError, { once: true });
+      const stopAt = item.audioStartSec + item.durationSec;
+      const src = resolveSrc(item.narrationSrc);
+
+      const finishGap = () => {
+        clearGapTimer();
+        audio.pause();
+        audio.removeEventListener("timeupdate", onTimeUpdate);
+        audio.removeEventListener("ended", onEnded);
+        if (indexRef.current === targetIndex) {
+          advance(shouldAutoplayRef.current);
+        }
+      };
+
+      const onTimeUpdate = () => {
+        if (audio.currentTime >= stopAt - 0.04) {
+          finishGap();
+        }
+      };
+
+      const onEnded = () => finishGap();
+
+      try {
+        if (audio.src !== src) {
+          audio.src = src;
+          audio.load();
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+            resolve();
+            return;
+          }
+          const onReady = () => resolve();
+          const onError = () => reject(new Error("Narration load failed"));
+          audio.addEventListener("canplaythrough", onReady, { once: true });
+          audio.addEventListener("error", onError, { once: true });
+        });
+
+        if (indexRef.current !== targetIndex) return;
+
+        audio.currentTime = item.audioStartSec;
+        if (!autoplay) {
+          setPlaying(false);
+          return;
+        }
+
+        audio.addEventListener("timeupdate", onTimeUpdate);
+        audio.addEventListener("ended", onEnded);
+        await audio.play();
+        setPlaying(true);
+
+        gapTimerRef.current = setTimeout(
+          finishGap,
+          Math.max(100, item.durationSec * 1000 + 250),
+        );
+      } catch {
+        if (indexRef.current !== targetIndex) return;
+        if (autoplay) {
+          gapTimerRef.current = setTimeout(
+            finishGap,
+            Math.max(50, item.durationSec * 1000),
+          );
+          setPlaying(true);
+        }
+      }
+    },
+    [advance, clearGapTimer],
+  );
+
+  useEffect(() => {
+    clearGapTimer();
+    narrationAudioRef.current?.pause();
+    const item = items[safeIndex];
+    if (!item) return;
+
+    if (item.kind === "gap") {
+      const autoplay = shouldAutoplayRef.current || playing;
+      void playGapNarration(item, autoplay, safeIndex);
+      return () => {
+        clearGapTimer();
+        narrationAudioRef.current?.pause();
+      };
+    }
+
+    const autoplay = shouldAutoplayRef.current || playing;
+    void swapToClip(item, autoplay, safeIndex);
 
     return () => {
-      cancelled = true;
-      el.removeEventListener("canplay", onCanPlay);
-      el.removeEventListener("error", onError);
+      clearGapTimer();
+      narrationAudioRef.current?.pause();
     };
-  }, [current?.motionSrc, safeIndex, total]);
+  }, [safeIndex, items, swapToClip, playGapNarration, clearGapTimer]);
+
+  useEffect(() => {
+    const onEnded = (slot: 0 | 1) => () => {
+      if (slot !== activeSlotRef.current) return;
+      const item = items[indexRef.current];
+      if (item?.kind !== "clip") return;
+      advance(shouldAutoplayRef.current);
+    };
+
+    const a = videoARef.current;
+    const b = videoBRef.current;
+    const endA = onEnded(0);
+    const endB = onEnded(1);
+    a?.addEventListener("ended", endA);
+    b?.addEventListener("ended", endB);
+    return () => {
+      a?.removeEventListener("ended", endA);
+      b?.removeEventListener("ended", endB);
+    };
+  }, [items, advance]);
 
   const togglePlay = useCallback(() => {
-    const el = videoRef.current;
-    if (!el || !current) return;
+    if (!current) return;
+
+    if (current.kind === "gap") {
+      const audio = narrationAudioRef.current;
+      if (playing) {
+        clearGapTimer();
+        audio?.pause();
+        setPlaying(false);
+        shouldAutoplayRef.current = false;
+      } else {
+        shouldAutoplayRef.current = true;
+        void playGapNarration(current, true, safeIndex);
+      }
+      return;
+    }
+
+    const el = videoRef(activeSlotRef.current).current;
+    if (!el) return;
 
     if (playing) {
       el.pause();
@@ -118,7 +394,8 @@ export function StudioAssemblyPreviewPlayer({
 
     shouldAutoplayRef.current = true;
     if (el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      void el.play()
+      void el
+        .play()
         .then(() => setPlaying(true))
         .catch(() => {
           setPlaying(false);
@@ -126,42 +403,17 @@ export function StudioAssemblyPreviewPlayer({
         });
     } else {
       setBuffering(true);
+      void swapToClip(current, true, safeIndex);
     }
-  }, [playing, current]);
+  }, [playing, current, advance, clearGapTimer, swapToClip, safeIndex, playGapNarration]);
 
-  const goTo = useCallback(
-    (nextIndex: number, keepPlaying: boolean) => {
-      if (nextIndex < 0 || nextIndex >= total) return;
-      shouldAutoplayRef.current = keepPlaying;
-      setIndex(nextIndex);
-      if (!keepPlaying) setPlaying(false);
-    },
-    [total],
-  );
-
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-
-    const onEnded = () => {
-      if (safeIndex < total - 1) {
-        goTo(safeIndex + 1, true);
-      } else {
-        setPlaying(false);
-        shouldAutoplayRef.current = false;
-      }
-    };
-
-    el.addEventListener("ended", onEnded);
-    return () => el.removeEventListener("ended", onEnded);
-  }, [safeIndex, total, goTo]);
-
-  if (total === 0) {
+  if (clipCount === 0) {
     return (
       <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-black/70 p-6 text-center">
         <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-          Assembly preview needs matching [VIS] stills and narration clips. Generate
-          visuals and audio first, then use{" "}
+          Assembly preview needs matching [VIS] stills and narration clips. Use{" "}
+          <span className="font-medium text-foreground">Generate stills</span> and
+          Audio first, then{" "}
           <span className="font-medium text-foreground">Generate clips</span>.
         </p>
         {clipReadyCount > 0 ? (
@@ -178,23 +430,60 @@ export function StudioAssemblyPreviewPlayer({
     );
   }
 
+  const isGap = current?.kind === "gap";
+
   return (
     <div className="flex flex-col">
-      <div className="relative aspect-video w-full bg-black">
+      <div className="relative aspect-video w-full overflow-hidden bg-black">
         <video
-          ref={videoRef}
-          className="size-full bg-black object-contain"
+          ref={videoARef}
+          className={cn(
+            "absolute inset-0 size-full bg-black object-contain transition-opacity duration-150",
+            activeSlot === 0 ? "z-10 opacity-100" : "z-0 opacity-0",
+          )}
           playsInline
           preload="auto"
-          aria-label={`Assembly preview: ${current?.label ?? "block"}`}
+          muted={false}
+          aria-hidden={activeSlot !== 0}
         />
+        <video
+          ref={videoBRef}
+          className={cn(
+            "absolute inset-0 size-full bg-black object-contain transition-opacity duration-150",
+            activeSlot === 1 ? "z-10 opacity-100" : "z-0 opacity-0",
+          )}
+          playsInline
+          preload="auto"
+          muted={false}
+          aria-hidden={activeSlot !== 1}
+        />
+
+        {isGap && current.kind === "gap" ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={current.stillPreviewSrc}
+              alt=""
+              className="absolute inset-0 z-[15] size-full bg-black object-contain"
+            />
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/45 px-6 text-center">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-white/60">
+                Block narration · before first visual beat
+              </p>
+              <p className="mt-1 text-sm text-white/90">{current.label}</p>
+            </div>
+          </>
+        ) : null}
+
+        <audio ref={narrationAudioRef} className="sr-only" preload="auto" />
+
         {buffering ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40">
-            <Loader2 className="size-8 animate-spin text-white/80" aria-hidden />
+          <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/25">
+            <Loader2 className="size-7 animate-spin text-white/70" aria-hidden />
           </div>
         ) : null}
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/80 to-transparent px-3 pb-8 pt-2.5">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 bg-gradient-to-b from-black/80 to-transparent px-3 pb-8 pt-2.5">
           <p className="text-[10px] font-medium uppercase tracking-wide text-white/70">
             Pre-export assembly
           </p>
@@ -203,17 +492,18 @@ export function StudioAssemblyPreviewPlayer({
           </p>
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-3 pb-3 pt-10">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-3 pb-3 pt-10">
           <p className="text-[11px] font-medium text-white">
             {current?.label}
             <span className="text-white/60">
               {" "}
               · {safeIndex + 1} / {total}
+              {isGap ? " · lead-in" : ""}
             </span>
           </p>
-          {current?.narrationPreview ? (
+          {current?.kind === "clip" && current.phrase ? (
             <p className="mt-1 line-clamp-2 text-[10px] leading-snug text-white/75">
-              {current.narrationPreview}
+              {current.phrase}
             </p>
           ) : null}
         </div>
@@ -226,9 +516,9 @@ export function StudioAssemblyPreviewPlayer({
             variant="ghost"
             size="icon"
             className="size-8 text-white hover:bg-white/10"
-            disabled={safeIndex <= 0 || buffering}
+            disabled={safeIndex <= 0}
             onClick={() => goTo(safeIndex - 1, playing)}
-            aria-label="Previous clip"
+            aria-label="Previous segment"
           >
             <SkipBack className="size-4" />
           </Button>
@@ -237,11 +527,10 @@ export function StudioAssemblyPreviewPlayer({
             variant="secondary"
             size="icon"
             className="size-9 shrink-0"
-            disabled={buffering}
             onClick={togglePlay}
             aria-label={playing ? "Pause assembly preview" : "Play assembly preview"}
           >
-            {buffering ? (
+            {buffering && !isGap ? (
               <Loader2 className="size-4 animate-spin" />
             ) : playing ? (
               <Pause className="size-4" />
@@ -254,11 +543,21 @@ export function StudioAssemblyPreviewPlayer({
             variant="ghost"
             size="icon"
             className="size-8 text-white hover:bg-white/10"
-            disabled={safeIndex >= total - 1 || buffering}
+            disabled={safeIndex >= total - 1}
             onClick={() => goTo(safeIndex + 1, playing)}
-            aria-label="Next clip"
+            aria-label="Next segment"
           >
             <SkipForward className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ml-1 h-8 text-[10px] text-white/90"
+            disabled={refreshPending || clipsPending}
+            onClick={() => void refreshStudioVisuals()}
+          >
+            {refreshPending ? "Refreshing…" : "Refresh"}
           </Button>
         </div>
 
@@ -267,7 +566,7 @@ export function StudioAssemblyPreviewPlayer({
           variant="default"
           size="sm"
           className="h-8 gap-1.5 text-[11px] sm:shrink-0"
-          disabled={exportPending || clipsPending || total === 0}
+          disabled={exportPending || clipsPending || clipCount === 0}
           onClick={() => void downloadAssemblyVideo()}
         >
           {exportPending ? (
@@ -280,10 +579,15 @@ export function StudioAssemblyPreviewPlayer({
       </div>
 
       <p className="border-t border-white/10 bg-black/40 px-3 py-2 text-[10px] leading-snug text-muted-foreground">
-        Preview plays block clips in order. Download joins all {total} clips into one
-        MP4 (ffmpeg concat, narration included).
+        Each block plays narration from the start (including speech before the first
+        visual phrase), then switches to phrase-timed Ken Burns clips.
       </p>
 
+      {playlistError ? (
+        <p role="alert" className="px-3 pt-1 text-[11px] text-destructive">
+          {playlistError}
+        </p>
+      ) : null}
       {clipError ? (
         <p role="alert" className="px-3 pt-1 text-[11px] text-destructive">
           {clipError}

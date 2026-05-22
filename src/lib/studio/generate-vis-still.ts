@@ -1,6 +1,12 @@
 import "server-only";
 
-import { VIS_STILL_MAX_CHARS, VIS_STILL_MIN_CHARS } from "@/lib/studio/vis-still-limits";
+import {
+  VIS_STILL_MAX_CHARS,
+  VIS_STILL_MIN_CHARS,
+  VIS_STILL_MIN_WORDS,
+  countVisStillWords,
+  visStillDescriptionShortfall,
+} from "@/lib/studio/vis-still-limits";
 import { persistVisStillFromBase64 } from "@/lib/studio-db/persist-vis-still";
 import { generateImagenSinglePng } from "@/lib/thumbnail/imagen-single-png";
 import { buildVisStillImagePrompt } from "@/prompts/thumbnail/build-vis-still-image-prompt";
@@ -31,13 +37,24 @@ export async function generateVisStillImageForBlock(params: {
   blockIndex: number;
   visualDescription: string;
   workingTitle?: string | null;
+  /** Bypass 35-word gate (force regen of legacy scripts); still requires min chars. */
+  force?: boolean;
 }): Promise<GenerateVisStillResult> {
   try {
     const v = params.visualDescription.trim();
-    if (v.length < VIS_STILL_MIN_CHARS) {
+    const shortfall = visStillDescriptionShortfall(v, {
+      requireMinWords: !params.force,
+    });
+    if (shortfall === "chars") {
       return {
         ok: false,
         error: `Visual description is too short (${v.length} chars). Aim for at least ${VIS_STILL_MIN_CHARS} characters of scene detail for Imagen.`,
+      };
+    }
+    if (shortfall === "words") {
+      return {
+        ok: false,
+        error: `Visual description is too short (${countVisStillWords(v)} words). Regenerate the script — each beat needs at least ${VIS_STILL_MIN_WORDS} words with shot type, environment layers, and presence setup.`,
       };
     }
     if (v.length > VIS_STILL_MAX_CHARS) {
@@ -48,6 +65,11 @@ export async function generateVisStillImageForBlock(params: {
     }
 
     const prompt = buildVisStillImagePrompt(v);
+    if (process.env.LOG_IMAGEN_PROMPTS === "1") {
+      console.info(
+        `[vis-still] Imagen prompt (${countVisStillWords(v)} words, ${v.length} chars, ${params.actId} block ${params.blockIndex}):\n${prompt.slice(0, 1200)}${prompt.length > 1200 ? "\n…" : ""}`,
+      );
+    }
     const gen = await generateImagenSinglePng(prompt);
     if (!gen.ok) {
       return { ok: false, error: gen.error };

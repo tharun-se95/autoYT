@@ -5,10 +5,16 @@ export type ScriptActId =
   | "mirror"
   | "way_forward";
 
-/** One narration pair: two spoken sentences + one comic still. */
+export type VisualBeat = {
+  phrase: string;
+  visualDescription: string;
+};
+
+/** One narration block: multiple rapid-fire visual beats trigger synchronized to narration. */
 export type ScriptNarrationBlock = {
   narration: string;
-  visualDescription: string;
+  visualDescription?: string; // legacy support
+  visualBeats: VisualBeat[]; // normalized array of visual beats
 };
 
 export type ScriptAct = {

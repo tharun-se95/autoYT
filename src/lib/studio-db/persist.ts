@@ -12,10 +12,11 @@ import type { ScriptDocument } from "@/lib/script-writer/types";
 
 function isContentPillar(s: string): s is ContentPillar {
   return (
-    s === "modern_mind" ||
-    s === "sorted_finance" ||
-    s === "biological_reset" ||
-    s === "relationship_engineering"
+    s === "overthinking" ||
+    s === "emotional_armor" ||
+    s === "identity_clarity" ||
+    s === "social_dynamics" ||
+    s === "habit_architecture"
   );
 }
 
@@ -47,14 +48,20 @@ function mapInsertedIdeaRow(row: {
   };
 }
 
-/** Persists one Content Architect batch (run + ideas). No-op if Supabase is not configured. */
+export type PersistIdeaBatchResult =
+  | { ok: true; runId: string; ideas: SavedStudioIdea[] }
+  | { ok: false; reason: "not_configured" | "insert_failed"; detail?: string };
+
+/** Persists one Content Architect batch (run + ideas). */
 export async function persistIdeaBatch(
   topics: string,
   ideaCount: number,
   ideas: VideoIdea[]
-): Promise<{ runId: string; ideas: SavedStudioIdea[] } | null> {
+): Promise<PersistIdeaBatchResult> {
   const supabase = createServiceSupabase();
-  if (!supabase || ideas.length === 0) return null;
+  if (!supabase || ideas.length === 0) {
+    return { ok: false, reason: "not_configured" };
+  }
 
   const { data: run, error: runErr } = await supabase
     .from("idea_generation_runs")
@@ -64,7 +71,11 @@ export async function persistIdeaBatch(
 
   if (runErr || !run) {
     console.error("[studio-db] idea_generation_runs:", runErr);
-    return null;
+    return {
+      ok: false,
+      reason: "insert_failed",
+      detail: runErr?.message,
+    };
   }
 
   const rows = ideas.map((i) => ({
@@ -86,7 +97,12 @@ export async function persistIdeaBatch(
 
   if (ideasErr || !inserted?.length) {
     console.error("[studio-db] generated_ideas:", ideasErr);
-    return null;
+    await supabase.from("idea_generation_runs").delete().eq("id", run.id);
+    return {
+      ok: false,
+      reason: "insert_failed",
+      detail: ideasErr?.message,
+    };
   }
 
   const saved: SavedStudioIdea[] = [];
@@ -96,10 +112,15 @@ export async function persistIdeaBatch(
   }
   if (saved.length !== ideas.length) {
     console.error("[studio-db] generated_ideas: row mapping mismatch");
-    return null;
+    await supabase.from("idea_generation_runs").delete().eq("id", run.id);
+    return {
+      ok: false,
+      reason: "insert_failed",
+      detail: "pillar or thumbnail_text_glow value mismatch after insert",
+    };
   }
 
-  return { runId: run.id, ideas: saved };
+  return { ok: true, runId: run.id, ideas: saved };
 }
 
 /** Persists a Lead Scriptwriter document. No-op if Supabase is not configured. */

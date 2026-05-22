@@ -3,20 +3,17 @@ import "server-only";
 import type { ScriptActId } from "@/lib/script-writer/types";
 
 /**
- * Ken Burns motion presets (same vocabulary as the YouTube video generator web app).
- * Each maps to a tuned `zoompan` chain: oversample still, animate, crop to WxH.
+ * Ken Burns motion presets — subtle zoom only.
+ * Pan presets removed: they caused visible edge-clipping on tightly-framed stills.
+ * Max zoom capped at 1.08 (8%) — imperceptible crop, smooth cinematic drift.
  */
 export type KenBurnsPreset =
   | "zoom_in"
-  | "zoom_out"
-  | "pan_left"
-  | "pan_right";
+  | "zoom_out";
 
 const PRESET_CYCLE: readonly KenBurnsPreset[] = [
   "zoom_in",
   "zoom_out",
-  "pan_left",
-  "pan_right",
 ];
 
 const ACT_ORDER: readonly ScriptActId[] = [
@@ -33,7 +30,7 @@ export function kenBurnsPresetForBeatIndex(index: number): KenBurnsPreset {
 }
 
 /**
- * One clip per narration block: rotate presets by act + block so neighbors differ.
+ * One clip per narration block: alternate zoom_in / zoom_out so adjacent beats contrast.
  */
 export function kenBurnsPresetForStudioBlock(
   actId: ScriptActId,
@@ -49,8 +46,13 @@ function clamp(n: number, lo: number, hi: number): number {
 }
 
 /**
- * `zoompan` chain: oversample still, animate zoom/pan for `totalFrames`, crop to `s=WxH`.
- * Tuned for subtle motion (matches `web/src/lib/ken-burns-ffmpeg.ts`).
+ * Subtle zoompan filter — max zoom 1.08 (8%), step 0.0005/frame.
+ * `scale=iw*2` oversample prevents pixelation at the zoomed edge.
+ * Always centred: x/y anchored at `iw/2-(iw/zoom/2)`.
+ *
+ * At 24fps for a 4-second beat (96 frames):
+ *   zoom_in:  1.000 → 1.048  (barely visible drift inward)
+ *   zoom_out: 1.080 → 1.032  (barely visible drift outward)
  */
 export function buildKenBurnsZoomPanFilter(
   preset: KenBurnsPreset,
@@ -65,17 +67,17 @@ export function buildKenBurnsZoomPanFilter(
   const F = Math.max(12, Math.round(fps));
 
   const tail = `d=${FN}:s=${W}x${H}:fps=${F}`;
+  // Centre anchor — same for both presets, no panning
+  const centre = `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`;
 
   switch (preset) {
     case "zoom_out":
-      return `scale=iw*4:ih*4:flags=lanczos,zoompan=z='if(eq(on,1),1.35,max(zoom-0.0016,1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':${tail}`;
-    case "pan_left":
-      return `scale=iw*3:ih*3:flags=lanczos,zoompan=z='1.08':x='min(max(iw/zoom-on*((iw-iw/zoom)/${FN}),0),iw-iw/zoom)':y='ih/2-(ih/zoom/2)':${tail}`;
-    case "pan_right":
-      return `scale=iw*3:ih*3:flags=lanczos,zoompan=z='1.08':x='min(max(iw-iw/zoom-on*((iw-iw/zoom)/${FN}),0),iw-iw/zoom)':y='ih/2-(ih/zoom/2)':${tail}`;
+      // Start at 1.08, drift slowly back toward 1.0 — never below 1.0
+      return `scale=iw*2:ih*2:flags=lanczos,zoompan=z='if(eq(on,1),1.08,max(zoom-0.0005,1))':${centre}:${tail}`;
     case "zoom_in":
     default:
-      return `scale=iw*4:ih*4:flags=lanczos,zoompan=z='if(eq(on,1),1,min(zoom+0.0016,1.35))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':${tail}`;
+      // Start at 1.0, drift slowly up to 1.08 — never above 1.08
+      return `scale=iw*2:ih*2:flags=lanczos,zoompan=z='if(eq(on,1),1,min(zoom+0.0005,1.08))':${centre}:${tail}`;
   }
 }
 

@@ -29,10 +29,11 @@ import { persistedThumbnailImageUrl } from "@/lib/studio/persisted-thumbnail-url
 import { ThumbnailImagePreview } from "@/components/studio/thumbnail-image-preview";
 
 const PILLAR_LABEL: Record<ContentPillar, string> = {
-  modern_mind: "A clear mind",
-  sorted_finance: "Financial peace",
-  biological_reset: "Personal habits",
-  relationship_engineering: "Human connections",
+  overthinking: "Overthinking",
+  emotional_armor: "Emotional armor",
+  identity_clarity: "Identity clarity",
+  social_dynamics: "Social dynamics",
+  habit_architecture: "Habit architecture",
 };
 
 type IdeaResultCardProps = {

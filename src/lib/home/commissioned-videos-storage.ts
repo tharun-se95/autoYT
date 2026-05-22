@@ -45,10 +45,11 @@ function isVideoIdea(x: unknown): x is VideoIdea {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
   const pillars = new Set([
-    "modern_mind",
-    "sorted_finance",
-    "biological_reset",
-    "relationship_engineering",
+    "overthinking",
+    "emotional_armor",
+    "identity_clarity",
+    "social_dynamics",
+    "habit_architecture",
   ]);
   return (
     typeof o.title === "string" &&
@@ -198,6 +199,13 @@ export function subscribeCommissionedVideos(
 export function getCommissionedVideo(id: string): CommissionedVideo | null {
   const row = readCommissionedVideos().find((v) => v.id === id);
   return row ? normalizeRow(row) : null;
+}
+
+/** Insert or replace a commissioned row (e.g. after importing from disk). */
+export function upsertCommissionedVideo(row: CommissionedVideo): void {
+  const normalized = normalizeRow(row);
+  const prev = readCommissionedVideos().filter((v) => v.id !== normalized.id);
+  writeCommissionedVideos([normalized, ...prev]);
 }
 
 /** Cap for data URLs stored on commissioned rows (localStorage size). */

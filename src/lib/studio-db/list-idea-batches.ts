@@ -7,10 +7,11 @@ import { topicsPreview } from "@/lib/studio/topics-preview";
 
 function isContentPillar(s: string): s is ContentPillar {
   return (
-    s === "modern_mind" ||
-    s === "sorted_finance" ||
-    s === "biological_reset" ||
-    s === "relationship_engineering"
+    s === "overthinking" ||
+    s === "emotional_armor" ||
+    s === "identity_clarity" ||
+    s === "social_dynamics" ||
+    s === "habit_architecture"
   );
 }
 

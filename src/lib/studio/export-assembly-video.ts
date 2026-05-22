@@ -10,9 +10,10 @@ import {
   sanitizeEpisodeIdForAssets,
   visAssemblyExportRelativePath,
 } from "@/lib/assets/local-asset-store";
-import { listAssemblyBlockTargets } from "@/lib/studio/assembly-block-targets";
+import { listAssemblyBeats } from "@/lib/studio/assembly-beats";
 import { concatMp4ClipsToFile } from "@/lib/studio/ffmpeg-concat-export";
-import { renderVisMotionBlock } from "@/lib/studio/render-vis-motion-block";
+import { loadScriptDocumentForVideo } from "@/lib/studio/load-script-document";
+import { renderVisMotionBeat } from "@/lib/studio/render-vis-motion-beat";
 import { listNarrationSegmentsForVideo } from "@/lib/studio-db/persist-narration-segment";
 import { listVisStillsForVideo } from "@/lib/studio-db/persist-vis-still";
 
@@ -51,7 +52,7 @@ async function exportNeedsRebuild(
 }
 
 /**
- * Ensures per-block motion clips exist, then ffmpeg-concats them into one MP4.
+ * Ensures per-beat motion clips exist, then ffmpeg-concats them into one MP4.
  */
 export async function exportAssemblyVideoForEpisode(params: {
   videoId: string;
@@ -63,35 +64,38 @@ export async function exportAssemblyVideoForEpisode(params: {
     return { ok: false, error: "Local assets root not configured." };
   }
 
-  const [segments, stills] = await Promise.all([
+  const [script, segments, stills] = await Promise.all([
+    loadScriptDocumentForVideo(videoId),
     listNarrationSegmentsForVideo(videoId),
     listVisStillsForVideo(videoId),
   ]);
 
-  const targets = listAssemblyBlockTargets(segments, stills);
-  if (targets.length === 0) {
+  const beats = listAssemblyBeats(script, segments, stills);
+  if (beats.length === 0) {
     return {
       ok: false,
       error:
-        "No blocks with both a [VIS] still and narration audio. Generate visuals and audio first.",
+        "No beats with both a [VIS] still and narration audio. Generate visuals and audio first.",
     };
   }
 
   const clipAbsPaths: string[] = [];
 
-  for (const target of targets) {
-    const result = await renderVisMotionBlock({
+  for (const beat of beats) {
+    const result = await renderVisMotionBeat({
       videoId,
-      actId: target.actId,
-      blockIndex: target.blockIndex,
-      still: target.still,
-      segment: target.segment,
+      actId: beat.actId,
+      baseBlockIndex: beat.baseBlockIndex,
+      beatIndex: beat.beatIndex,
+      still: beat.still,
+      segment: beat.segment,
+      blockVisualBeats: beat.blockVisualBeats,
       force: false,
     });
     if (!result.ok) {
       return {
         ok: false,
-        error: `${target.actId} · block ${target.blockIndex + 1}: ${result.error}`,
+        error: `${beat.actTitle} · block ${beat.baseBlockIndex + 1} beat ${beat.beatIndex + 1}: ${result.error}`,
       };
     }
     try {
@@ -117,7 +121,7 @@ export async function exportAssemblyVideoForEpisode(params: {
     return {
       ok: true,
       videoId,
-      clipCount: targets.length,
+      clipCount: beats.length,
       cached: true,
       relativePath: exportRel,
       absolutePath: exportAbs,
@@ -142,7 +146,7 @@ export async function exportAssemblyVideoForEpisode(params: {
   return {
     ok: true,
     videoId,
-    clipCount: targets.length,
+    clipCount: beats.length,
     cached: false,
     relativePath: exportRel,
     absolutePath: exportAbs,

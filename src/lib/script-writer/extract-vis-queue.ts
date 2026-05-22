@@ -4,6 +4,8 @@ export type VisQueueItem = {
   actId: string;
   actTitle: string;
   blockIndex: number;
+  beatIndex: number;
+  phrase: string;
   visualDescription: string;
 };
 
@@ -15,13 +17,27 @@ export function extractVisQueueFromScript(
   const out: VisQueueItem[] = [];
   for (const act of doc.acts) {
     act.narrationBlocks.forEach((block, blockIndex) => {
-      const v = block.visualDescription?.trim();
-      if (v) {
+      const beats = block.visualBeats || [];
+      if (beats.length > 0) {
+        beats.forEach((beat, beatIndex) => {
+          out.push({
+            actId: act.actId,
+            actTitle: act.displayTitle,
+            blockIndex,
+            beatIndex,
+            phrase: beat.phrase,
+            visualDescription: beat.visualDescription,
+          });
+        });
+      } else if (block.visualDescription) {
+        // Fallback for non-normalized legacy blocks
         out.push({
           actId: act.actId,
           actTitle: act.displayTitle,
           blockIndex,
-          visualDescription: v,
+          beatIndex: 0,
+          phrase: block.narration.trim().split(" ").slice(0, 4).join(" ") + "...",
+          visualDescription: block.visualDescription,
         });
       }
     });

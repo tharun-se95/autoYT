@@ -21,10 +21,11 @@ import type {
 const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
 const PILLAR_VALUES: ContentPillar[] = [
-  "modern_mind",
-  "sorted_finance",
-  "biological_reset",
-  "relationship_engineering",
+  "overthinking",
+  "emotional_armor",
+  "identity_clarity",
+  "social_dynamics",
+  "habit_architecture",
 ];
 
 const THUMBNAIL_GLOW_VALUES: ThumbnailTextGlow[] = ["cyan", "amber"];
@@ -94,10 +95,11 @@ const MAX_COUNT = 12;
 
 function isContentPillar(s: string): s is ContentPillar {
   return (
-    s === "modern_mind" ||
-    s === "sorted_finance" ||
-    s === "biological_reset" ||
-    s === "relationship_engineering"
+    s === "overthinking" ||
+    s === "emotional_armor" ||
+    s === "identity_clarity" ||
+    s === "social_dynamics" ||
+    s === "habit_architecture"
   );
 }
 
@@ -217,12 +219,18 @@ Return exactly ${count} ideas as JSON matching the response schema. Follow the *
       };
     }
     const persisted = await persistIdeaBatch(trimmed, ideas.length, ideas);
-    if (!persisted) {
+    if (!persisted.ok) {
+      const configHint =
+        persisted.reason === "not_configured"
+          ? "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) in .env.local and restart the dev server."
+          : "Apply the latest Supabase migrations in supabase/migrations/ (especially generated_ideas_pillar_v5), then restart the dev server.";
+      const detail = persisted.detail ? ` Database: ${persisted.detail}` : "";
       return {
         ok: false,
         error:
           "Ideas were generated but could not be saved to the studio database. " +
-          "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local, apply migrations, and restart the dev server.",
+          configHint +
+          detail,
       };
     }
 

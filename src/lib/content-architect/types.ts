@@ -1,10 +1,12 @@
-/** Types shared by the Content Strategist agent (Channel DNA v4). */
+/** Types shared by the Content Strategist agent (Channel DNA v5). */
 
+/** Psychology sub-themes — all under the single mindset pillar. */
 export type ContentPillar =
-  | "modern_mind"
-  | "sorted_finance"
-  | "biological_reset"
-  | "relationship_engineering";
+  | "overthinking"
+  | "emotional_armor"
+  | "identity_clarity"
+  | "social_dynamics"
+  | "habit_architecture";
 
 /** Hook text glow: cyan = clarity / blueprint / cool highlights; amber = warmth / gold-hour / habits / money calm. */
 export type ThumbnailTextGlow = "cyan" | "amber";

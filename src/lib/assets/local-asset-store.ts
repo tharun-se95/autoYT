@@ -232,14 +232,14 @@ export function resolveVisAssemblyExportAbsolutePath(relativePath: string): stri
   return path.join(root, ...norm.split("/"));
 }
 
-/** Relative path for cached [VIS] motion preview (H.264 + AAC). */
-export function visMotionRelativePathForBlock(
+/** Relative path for cached per-beat motion clip (`storageIndex` = baseBlock×100+beat). */
+export function visMotionRelativePathForBeat(
   episodeId: string,
   actId: string,
-  blockIndex: number,
+  motionStorageIndex: number,
 ): string {
   const safeId = sanitizeEpisodeIdForAssets(episodeId);
-  const idx = String(Math.max(0, blockIndex)).padStart(4, "0");
+  const idx = String(Math.max(0, motionStorageIndex)).padStart(4, "0");
   const relativePath = path.posix.join(
     "vis-stills",
     safeId,
@@ -251,6 +251,15 @@ export function visMotionRelativePathForBlock(
     throw new Error("[local-asset-store] vis-motion path failed validation");
   }
   return relativePath;
+}
+
+/** @deprecated Use visMotionRelativePathForBeat with motion storage index. */
+export function visMotionRelativePathForBlock(
+  episodeId: string,
+  actId: string,
+  blockIndex: number,
+): string {
+  return visMotionRelativePathForBeat(episodeId, actId, blockIndex);
 }
 
 /** `vis-stills/{episodeId}/{actId}-{blockIndex}.png` — episodeId sanitized. */

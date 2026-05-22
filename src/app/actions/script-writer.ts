@@ -9,12 +9,15 @@ import {
 
 import { LEAD_SCRIPTWRITER_SYSTEM } from "@/prompts/script-writer/build-system-instruction";
 import { persistScriptDocument } from "@/lib/studio-db/persist";
-import type {
-  ScriptAct,
-  ScriptActId,
-  ScriptDocument,
-  GenerateScriptResult,
-} from "@/lib/script-writer/types";
+import {
+  formatValidationIssuesForModel,
+  formatValidationIssuesForUser,
+  isScriptBlockOpeningsValid,
+  repairScriptBlockOpenings,
+  validateScriptBlockOpenings,
+} from "@/lib/script-writer/validate-block-openings";
+import { normalizeScript } from "@/lib/script-writer/normalize-script-document";
+import type { GenerateScriptResult, ScriptActId } from "@/lib/script-writer/types";
 
 const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
@@ -25,21 +28,39 @@ const ACT_IDS: ScriptActId[] = [
   "way_forward",
 ];
 
+const VISUAL_BEAT_SCHEMA = {
+  type: SchemaType.OBJECT,
+  properties: {
+    phrase: {
+      type: SchemaType.STRING,
+      description:
+        "Verbatim 1–5 words from the block narration where this visual triggers. For the FIRST beat in each block, this MUST be the opening words of that block's narration (no spoken setup before it).",
+    },
+    visualDescription: {
+      type: SchemaType.STRING,
+      description:
+        "Ken Burns b-roll still: minimum 35 words. Must name shot type/angle, foreground/midground/background, presence setup (co-populated, environment-only, or mentor-only), and Daily Chaos vs Sorted Peace. Full environment — no gradient-only backgrounds. System visual-direction rules apply.",
+    },
+  },
+  required: ["phrase", "visualDescription"],
+} satisfies Schema;
+
 const NARRATION_BLOCK_SCHEMA = {
   type: SchemaType.OBJECT,
   properties: {
     narration: {
       type: SchemaType.STRING,
       description:
-        "Exactly two spoken sentences (phrase-to-frame unit). Second person you. Semantic rules: system instruction only.",
+        "Three to six spoken sentences (second person you). Longer blocks OK when the act needs depth. Use ... and — for TTS pause timing. MUST begin with visualBeats[0].phrase. Include every visualBeats phrase verbatim.",
     },
-    visualDescription: {
-      type: SchemaType.STRING,
+    visualBeats: {
+      type: SchemaType.ARRAY,
+      items: VISUAL_BEAT_SCHEMA,
       description:
-        "One 16:9 Visualist / Chibi-Lite narrative explainer panel for Ken Burns after the narration above (Daily Chaos vs Sorted Peace, palette + CHARACTER LOCK in system).",
+        "Visual beats for this block: enough phrases that no beat covers more than ~5s of spoken narration (~3–5s target between cuts). Typically 2–4 beats on short blocks; 5–10+ on longer blocks. Each beat: phrase (1–5 words from narration) + visualDescription.",
     },
   },
-  required: ["narration", "visualDescription"],
+  required: ["narration", "visualBeats"],
 } satisfies Schema;
 
 const ACT_SCHEMA = {
@@ -59,7 +80,7 @@ const ACT_SCHEMA = {
       type: SchemaType.ARRAY,
       items: NARRATION_BLOCK_SCHEMA,
       description:
-        "Ordered narration+visual pairs. Enough blocks that narration in this act reaches ~500+ words total.",
+        "Ordered narration blocks. Enough blocks that narration in this act reaches ~500+ words total.",
     },
     curiosityBridge: {
       type: SchemaType.STRING,
@@ -84,69 +105,75 @@ const SCRIPT_RESPONSE_SCHEMA: ResponseSchema = {
 const MIN_BRIEF = 24;
 const MAX_BRIEF = 8000;
 
-function isScriptActId(s: string): s is ScriptActId {
-  return (
-    s === "mess" ||
-    s === "deep_dive" ||
-    s === "mirror" ||
-    s === "way_forward"
-  );
+function buildInitialUserText(trimmedBrief: string): string {
+  return `Write the full script from this producer brief. Obey the **entire** system instruction (do not restate rules here).
+
+---
+${trimmedBrief}
+---
+
+Return JSON matching the schema: workingTitle, exactly four acts (mess, deep_dive, mirror, way_forward), each with enough narrationBlocks that **narration** in that act totals **~500+ words**, each block = **3–6 sentences** narration + enough **visualBeats** that no beat covers more than ~5s spoken (typically 2–4 beats on short blocks, more on long blocks), plus curiosityBridge per act. Use ... and — for pause timing in the narration.
+
+**Block opening:** In every block, visualBeats[0].phrase must be the opening words of that block's narration (no spoken lines before the first visual).`;
 }
 
-function normalizeScript(raw: unknown): ScriptDocument | null {
-  if (!raw || typeof raw !== "object") return null;
-  const o = raw as Record<string, unknown>;
-  const workingTitle = o.workingTitle;
-  const acts = o.acts;
-  if (typeof workingTitle !== "string" || !workingTitle.trim()) return null;
-  if (!Array.isArray(acts) || acts.length !== 4) return null;
+function buildRetryUserText(trimmedBrief: string, issues: ReturnType<typeof validateScriptBlockOpenings>): string {
+  return `Your previous JSON failed validation. Fix every block below and return the **complete** script JSON again.
 
-  const parsed: ScriptAct[] = [];
-  for (const item of acts) {
-    if (!item || typeof item !== "object") return null;
-    const a = item as Record<string, unknown>;
-    if (typeof a.actId !== "string" || !isScriptActId(a.actId)) return null;
-    if (typeof a.displayTitle !== "string" || !a.displayTitle.trim())
-      return null;
-    if (typeof a.curiosityBridge !== "string" || !a.curiosityBridge.trim())
-      return null;
-    const blocks = a.narrationBlocks;
-    if (!Array.isArray(blocks) || blocks.length < 1) return null;
-    const narrationBlocks: ScriptAct["narrationBlocks"] = [];
-    for (const b of blocks) {
-      if (!b || typeof b !== "object") return null;
-      const nb = b as Record<string, unknown>;
-      if (typeof nb.narration !== "string" || !nb.narration.trim())
-        return null;
-      if (
-        typeof nb.visualDescription !== "string" ||
-        !nb.visualDescription.trim()
-      )
-        return null;
-      narrationBlocks.push({
-        narration: nb.narration.trim(),
-        visualDescription: nb.visualDescription.trim(),
-      });
+Validation failures:
+${formatValidationIssuesForModel(issues)}
+
+Rules to fix:
+- Each block's visualBeats[0].phrase must be the **first 1–5 words** of that block's narration.
+- Every visualBeats phrase must appear verbatim in narration, in beat order.
+
+Original producer brief:
+---
+${trimmedBrief}
+---`;
+}
+
+async function requestScriptJson(
+  trimmedBrief: string,
+  userText: string,
+  temperature: number,
+): Promise<{ script: import("@/lib/script-writer/types").ScriptDocument | null; parseError: string | null }> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key?.trim()) {
+    return { script: null, parseError: "Missing GEMINI_API_KEY." };
+  }
+
+  const genAI = new GoogleGenerativeAI(key);
+  const model = genAI.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: LEAD_SCRIPTWRITER_SYSTEM,
+  });
+
+  const result = await model.generateContent({
+    contents: [{ role: "user", parts: [{ text: userText }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens: 8192,
+      responseMimeType: "application/json",
+      responseSchema: SCRIPT_RESPONSE_SCHEMA,
+    },
+  });
+
+  const text = result.response.text();
+  try {
+    const parsed: unknown = JSON.parse(text);
+    const script = normalizeScript(parsed);
+    if (!script) {
+      return {
+        script: null,
+        parseError:
+          "Could not parse the script from the model. Try a shorter brief or run again.",
+      };
     }
-    parsed.push({
-      actId: a.actId,
-      displayTitle: a.displayTitle.trim(),
-      narrationBlocks,
-      curiosityBridge: a.curiosityBridge.trim(),
-    });
+    return { script, parseError: null };
+  } catch {
+    return { script: null, parseError: "Model returned invalid JSON." };
   }
-
-  const ids = new Set(parsed.map((p) => p.actId));
-  if (ids.size !== 4) return null;
-  for (const id of ACT_IDS) {
-    if (!ids.has(id)) return null;
-  }
-
-  parsed.sort(
-    (x, y) => ACT_IDS.indexOf(x.actId) - ACT_IDS.indexOf(y.actId)
-  );
-
-  return { workingTitle: workingTitle.trim(), acts: parsed };
 }
 
 /**
@@ -179,41 +206,44 @@ export async function generateScript(
     };
   }
 
-  const genAI = new GoogleGenerativeAI(key);
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: LEAD_SCRIPTWRITER_SYSTEM,
-  });
-
-  const userText = `Write the full script from this producer brief. Obey the **entire** system instruction (do not restate rules here).
-
----
-${trimmed}
----
-
-Return JSON matching the schema: workingTitle, exactly four acts (mess, deep_dive, mirror, way_forward), each with enough narrationBlocks that **narration** in that act totals **~500+ words**, each block = two sentences narration + one visualDescription, plus curiosityBridge per act.`;
-
   try {
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: userText }] }],
-      generationConfig: {
-        temperature: 0.85,
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json",
-        responseSchema: SCRIPT_RESPONSE_SCHEMA,
-      },
-    });
+    let { script, parseError } = await requestScriptJson(
+      trimmed,
+      buildInitialUserText(trimmed),
+      0.85,
+    );
 
-    const text = result.response.text();
-    const parsed: unknown = JSON.parse(text);
-    const script = normalizeScript(parsed);
     if (!script) {
-      return {
-        ok: false,
-        error:
-          "Could not parse the script from the model. Try a shorter brief or run again.",
-      };
+      return { ok: false, error: parseError ?? "Generation failed." };
     }
+
+    if (!isScriptBlockOpeningsValid(script)) {
+      const issues = validateScriptBlockOpenings(script);
+      const retry = await requestScriptJson(
+        trimmed,
+        buildRetryUserText(trimmed, issues),
+        0.5,
+      );
+      script = retry.script;
+      parseError = retry.parseError;
+
+      if (!script) {
+        return { ok: false, error: parseError ?? "Retry generation failed." };
+      }
+
+      if (!isScriptBlockOpeningsValid(script)) {
+        script = repairScriptBlockOpenings(script);
+      }
+
+      if (!isScriptBlockOpeningsValid(script)) {
+        const retryIssues = validateScriptBlockOpenings(script);
+        return {
+          ok: false,
+          error: `Script validation failed after retry. ${formatValidationIssuesForUser(retryIssues)}`,
+        };
+      }
+    }
+
     void persistScriptDocument(trimmed, script).catch((err) => {
       console.error("[script-writer] Supabase persist:", err);
     });

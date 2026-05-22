@@ -9,10 +9,15 @@ import {
   checkFfprobeAvailable,
   streamMp4File,
 } from "@/lib/studio/ffmpeg-vis-motion";
-import { renderVisMotionBlock } from "@/lib/studio/render-vis-motion-block";
+import { listAssemblyBeats } from "@/lib/studio/assembly-beats";
+import { parseMotionStorageIndex } from "@/lib/studio/beat-timings";
+import { loadScriptDocumentForVideo } from "@/lib/studio/load-script-document";
+import { renderVisMotionBeat } from "@/lib/studio/render-vis-motion-beat";
 import { listNarrationSegmentsForVideo } from "@/lib/studio-db/persist-narration-segment";
 import { listVisStillsForVideo } from "@/lib/studio-db/persist-vis-still";
 import type { ScriptActId } from "@/lib/script-writer/types";
+
+export const dynamic = "force-dynamic";
 
 const ACT_IDS: readonly ScriptActId[] = [
   "mess",
@@ -51,14 +56,16 @@ export async function GET(request: Request) {
   if (!isActId(actIdRaw)) {
     return NextResponse.json({ ok: false, error: "Invalid actId." }, { status: 400 });
   }
-  const actId = actIdRaw;
-  const blockIndex = Number.parseInt(blockRaw, 10);
-  if (!Number.isInteger(blockIndex) || blockIndex < 0) {
+  const actId: ScriptActId = actIdRaw;
+  const motionStorageIndex = Number.parseInt(blockRaw, 10);
+  if (!Number.isInteger(motionStorageIndex) || motionStorageIndex < 0) {
     return NextResponse.json(
-      { ok: false, error: "Invalid blockIndex." },
+      { ok: false, error: "Invalid blockIndex (motion storage index)." },
       { status: 400 },
     );
   }
+
+  const { baseBlockIndex, beatIndex } = parseMotionStorageIndex(motionStorageIndex);
 
   if (!getLocalAssetsRoot()) {
     return NextResponse.json(
@@ -71,37 +78,34 @@ export async function GET(request: Request) {
     return ffmpegUnavailableResponse();
   }
 
-  const [segments, stills] = await Promise.all([
+  const [script, segments, stills] = await Promise.all([
+    loadScriptDocumentForVideo(videoId),
     listNarrationSegmentsForVideo(videoId),
     listVisStillsForVideo(videoId),
   ]);
 
-  const seg = segments.find(
-    (s) => s.actId === actId && s.blockIndex === blockIndex,
-  );
-  const still = stills.find(
-    (s) => s.actId === actId && s.blockIndex === blockIndex,
+  const beat = listAssemblyBeats(script, segments, stills).find(
+    (b) =>
+      b.actId === actId &&
+      b.baseBlockIndex === baseBlockIndex &&
+      b.beatIndex === beatIndex,
   );
 
-  if (!seg) {
+  if (!beat) {
     return NextResponse.json(
-      { ok: false, error: "No narration audio for this block." },
-      { status: 404 },
-    );
-  }
-  if (!still) {
-    return NextResponse.json(
-      { ok: false, error: "No [VIS] still for this block." },
+      { ok: false, error: "No still or narration for this beat." },
       { status: 404 },
     );
   }
 
-  const result = await renderVisMotionBlock({
+  const result = await renderVisMotionBeat({
     videoId,
     actId,
-    blockIndex,
-    still,
-    segment: seg,
+    baseBlockIndex,
+    beatIndex,
+    still: beat.still,
+    segment: beat.segment,
+    blockVisualBeats: beat.blockVisualBeats,
   });
 
   if (!result.ok) {

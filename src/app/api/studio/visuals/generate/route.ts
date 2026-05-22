@@ -21,6 +21,7 @@ type Body = {
   blockIndex?: number | string;
   visualDescription?: string;
   workingTitle?: string;
+  force?: boolean;
 };
 
 function parseBlockIndex(raw: Body["blockIndex"]): number {
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
       blockIndex,
       visualDescription,
       workingTitle,
+      force: Boolean(body.force),
     });
 
     if (!result.ok) {

@@ -7,7 +7,10 @@
  * All agent prompts and marketing copy should align with that document.
  * Spoken / TTS performance layer: `src/prompts/vocal-dna.ts` (injected for Gemini TTS).
  */
-export const CHANNEL_DNA_VERSION = "v4.0";
-export const CHANNEL_DNA_SOURCE_FILE = "Upgrade_Life_Final_DNA_v4.txt";
+export const CHANNEL_DNA_VERSION = "v5.0";
+export const CHANNEL_DNA_SOURCE_FILE = "Upgrade_Life_DNA_v5.txt";
+/** The thesis every video argues from — injected into agent prompts. */
+export const CHANNEL_THESIS =
+  "Your life isn't complicated — you are.";
 /** In-repo reference still; style follows Chibi-Lite infographic comic + Cyber-Stoic (see channel-visual-style). */
 export const CHANNEL_COMIC_REFERENCE_IMAGE = "/upgrade-life-comic-reference.png";

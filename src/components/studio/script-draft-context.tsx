@@ -116,6 +116,14 @@ export function ScriptDraftProvider({
           })
         );
         notifyDraftUpdated();
+
+        if (nextScript) {
+          fetch("/api/studio/script/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ videoId, script: nextScript }),
+          }).catch((err) => console.error("Error syncing script draft to server:", err));
+        }
       } catch {
         /* quota / private mode */
       }
@@ -125,36 +133,71 @@ export function ScriptDraftProvider({
 
   useEffect(() => {
     if (!videoId) return;
+    let cancelled = false;
+
+    const applyDraft = (brief: string, scriptJson: ScriptDocument | null) => {
+      if (cancelled) return;
+      if (brief) setBriefState(brief);
+      if (scriptJson) {
+        setScript(scriptJson);
+        setGeneratedThisSession(true);
+      }
+      seededDefault.current = true;
+    };
+
     queueMicrotask(() => {
       try {
         const raw = localStorage.getItem(scriptDraftStorageKey(videoId));
-        if (!raw) return;
-        const parsed: unknown = JSON.parse(raw);
-        if (!parsed || typeof parsed !== "object") return;
-        const o = parsed as Record<string, unknown>;
-        if (typeof o.brief === "string") setBriefState(o.brief);
-        if (isScriptDocument(o.scriptJson)) {
-          setScript(o.scriptJson);
-          setGeneratedThisSession(true);
+        if (raw) {
+          const parsed: unknown = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            const o = parsed as Record<string, unknown>;
+            const brief = typeof o.brief === "string" ? o.brief : "";
+            const scriptJson = isScriptDocument(o.scriptJson)
+              ? o.scriptJson
+              : null;
+            if (scriptJson) {
+              applyDraft(brief, scriptJson);
+              return;
+            }
+          }
         }
-        seededDefault.current = true;
       } catch {
         /* ignore corrupt draft */
       }
+
+      void (async () => {
+        try {
+          const res = await fetch(
+            `/api/studio/script/load?videoId=${encodeURIComponent(videoId)}`,
+            { cache: "no-store" },
+          );
+          const data = (await res.json()) as {
+            ok?: boolean;
+            script?: ScriptDocument;
+          };
+          if (!res.ok || !data.ok || !data.script) return;
+          applyDraft("", data.script);
+          persist("", data.script);
+        } catch {
+          /* disk script unavailable */
+        }
+      })();
     });
-  }, [videoId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [videoId, persist]);
 
   useEffect(() => {
     if (seededDefault.current) return;
     const t = defaultBrief?.trim();
-    if (!t) return;
-    setBriefState((b) => {
-      if (b.trim() !== "") return b;
-      seededDefault.current = true;
-      setShowSeededBanner(true);
-      return t;
-    });
-  }, [defaultBrief]);
+    if (!t || brief.trim() !== "") return;
+    seededDefault.current = true;
+    setBriefState(t);
+    setShowSeededBanner(true);
+  }, [defaultBrief, brief]);
 
   useEffect(() => {
     if (!videoId) return;
@@ -163,6 +206,15 @@ export function ScriptDraftProvider({
     }, 450);
     return () => window.clearTimeout(handle);
   }, [brief, script, videoId, persist]);
+
+  useEffect(() => {
+    if (!videoId || !script) return;
+    fetch("/api/studio/script/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoId, script }),
+    }).catch((err) => console.error("Error syncing script draft to server on load:", err));
+  }, [script, videoId]);
 
   const setBrief = useCallback((v: string) => {
     setBriefState(v);

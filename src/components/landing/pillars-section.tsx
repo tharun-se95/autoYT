@@ -1,8 +1,9 @@
 import {
-  Activity,
   Brain,
   HeartHandshake,
-  Wallet,
+  Search,
+  Shield,
+  Workflow,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -19,32 +20,39 @@ import { SectionHeader } from "./section-header";
 
 const pillars = [
   {
-    title: "A clear mind",
+    title: "Overthinking",
     description:
-      "Psychology and focus so people feel less overwhelmed by the noise of daily life.",
+      "Decision paralysis, rumination loops, analysis spirals — why your brain won't shut up and how to quiet it.",
     icon: Brain,
     tag: "Mind",
   },
   {
-    title: "Financial peace",
+    title: "Emotional armor",
     description:
-      "Practical money guidance to ease stress and build a steadier, more secure future.",
-    icon: Wallet,
-    tag: "Money",
+      "Anxiety, anger, emotional regulation — building resilience without suppressing what you actually feel.",
+    icon: Shield,
+    tag: "Resilience",
   },
   {
-    title: "Personal habits",
+    title: "Identity clarity",
     description:
-      "Simple routines that help body and mind feel energized and sorted again.",
-    icon: Activity,
-    tag: "Habits",
+      "Self-knowledge, values, purpose — cutting through the noise of who you think you should be.",
+    icon: Search,
+    tag: "Purpose",
   },
   {
-    title: "Human connections",
+    title: "Social dynamics",
     description:
-      "Relationships built on intentional, personal gestures—not generic check-ins.",
+      "Relationships and connection through a psychology lens — why you attract chaos and how to build intentional bonds.",
     icon: HeartHandshake,
-    tag: "Love & friendship",
+    tag: "Connection",
+  },
+  {
+    title: "Habit architecture",
+    description:
+      "Building and breaking habits via behavioral psychology — the science of why willpower fails and systems work.",
+    icon: Workflow,
+    tag: "Systems",
   },
 ] as const;
 
@@ -56,11 +64,11 @@ export function PillarsSection() {
     >
       <SectionContainer className="flex flex-col gap-12">
         <SectionHeader
-          eyebrow="Four foundations"
-          title="Channel DNA — what Upgrade Life stands on"
-          description="Relatable struggles and gentle blueprints: mind, money, habits, and heart—plain human language, Chibi-Lite infographic comic on screen."
+          eyebrow="One focus, five angles"
+          title="Psychology & mindset — the only lens that matters"
+          description="Every video traces back to how the mind works. Five angles, one mission: help you feel sorted."
         />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {pillars.map((pillar) => (
             <Card
               key={pillar.title}
