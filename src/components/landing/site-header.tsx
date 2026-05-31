@@ -54,7 +54,7 @@ export function SiteHeader() {
           href="/"
           className="font-heading text-sm font-semibold tracking-tight text-foreground"
         >
-          Creator Studio
+          autoYT
         </Link>
 
         <nav
@@ -78,7 +78,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <GlassPanel className="hidden px-3 py-1.5 lg:block">
             <span className="text-xs text-muted-foreground">
-              Autonomous explainer comic production suite
+              Enterprise-grade multi-channel video production
             </span>
           </GlassPanel>
 

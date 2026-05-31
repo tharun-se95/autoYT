@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Creator Studio — Autonomous Long-Form Video Production",
+  title: "autoYT — Enterprise-Grade Multi-Channel Video Production Studio",
   description:
-    "Generate, script, narrate, and illustrate binge-worthy digital stories using advanced multi-step orchestrator systems.",
+    "autoYT runs end-to-end video production across seeded channels — from brand-matched ideation and dynamic scripts to offline speech alignment, vision-audited storyboards, and kinetic subtitle hardburns.",
 };
 
 export default function RootLayout({
