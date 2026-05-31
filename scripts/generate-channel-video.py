@@ -153,6 +153,19 @@ def main():
     seagate_music_src = "/Volumes/Seagate/film-agent-app/public/assets/library/ca66f5e44a5564e2b7bacfac3196a106.mp3"
     local_music_dest = os.path.join(root_dir, "bg_music.mp3")
 
+    if not os.path.exists(local_music_dest):
+        if os.path.exists(seagate_music_src):
+            print("🎵 [SOUND DESIGN] Copying premium ambient track from Seagate SSD...")
+            shutil.copy2(seagate_music_src, local_music_dest)
+            print(f"      ✓ Background music copied to: {local_music_dest}")
+        else:
+            print(
+                f"      ⚠️ Warning: Background music not found at {local_music_dest} "
+                f"or {seagate_music_src}. Ducking mix will fall back to narration-only."
+            )
+    else:
+        print(f"      ✓ Background music bed ready: {local_music_dest}")
+
     # Define our three highly-distinct generation tasks (Second-Generation, 100% fresh topics!)
     all_tasks = [
         {
@@ -426,11 +439,48 @@ def main():
         base_video_path = os.path.join(root_dir, export_res["relativePath"])
         print(f"      ✓ Base video compiled at: {base_video_path}")
 
-        # Step F: Copying base video to output_mixed_path directly (Bypassing faulty background score)
-        print("   6. Finalizing output video (Bypassing background music)...")
+        # Step F: Smart Audio-Ducking mix (side-chain compression) with graceful fallback
+        print("   6. Finalizing output video (Smart Audio-Ducking mix)...")
         output_mixed_path = os.path.join(asset_sub_dir, "export", "assembly_mixed.mp4")
         os.makedirs(os.path.dirname(output_mixed_path), exist_ok=True)
-        shutil.copy2(base_video_path, output_mixed_path)
+
+        ducking_filter = (
+            "[1:a]aloop=loop=-1:size=2e+09,volume=0.28[bg];"
+            "[0:a]asplit=2[nar][sc];"
+            "[bg][sc]sidechaincompress=threshold=0.02:ratio=8:attack=20:release=400:level_sc=1[ducked];"
+            "[nar][ducked]amix=inputs=2:duration=first:dropout_transition=2[aout]"
+        )
+
+        if os.path.exists(local_music_dest):
+            print("      🎙️ Mixing narration with side-chain ducked background bed...")
+            mix_cmd = [
+                "ffmpeg", "-y",
+                "-i", base_video_path,
+                "-i", local_music_dest,
+                "-filter_complex", ducking_filter,
+                "-map", "0:v",
+                "-map", "[aout]",
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                "-shortest",
+                output_mixed_path,
+            ]
+            mix_res = subprocess.run(mix_cmd, capture_output=True, text=True)
+            if mix_res.returncode != 0:
+                print("      ⚠️ Warning: FFmpeg ducking mix failed; falling back to narration-only base video.")
+                if mix_res.stderr:
+                    print(f"         {mix_res.stderr.strip()[-500:]}")
+                shutil.copy2(base_video_path, output_mixed_path)
+            else:
+                print("      ✓ Smart Audio-Ducking mix complete!")
+        else:
+            print(
+                f"      ⚠️ Warning: Background music file missing ({local_music_dest}); "
+                "falling back to narration-only base video."
+            )
+            shutil.copy2(base_video_path, output_mixed_path)
+
         print(f"      🎉 SUCCESS! Video completely compiled!")
         print(f"         Path: {output_mixed_path}")
         generated_videos.append(output_mixed_path)
