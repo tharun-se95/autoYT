@@ -80,6 +80,14 @@ To prevent massive style drift and production fatigue while maintaining high-end
 6. **Detailed and Rich Scene Construction (Describe Everything):**
    - Every visualDescription must be a dense, descriptive, and highly detailed visual prompt. Do not write short, lazy phrases like "an abstract laptop" or "someone overthinking".
    - Instead, describe the entire 16:9 cinematic shot comprehensively: the dramatic lighting (e.g., soft golden twilight filtering through a high window, harsh blue screen glow casting long shadows), the precise environment layout, the textures (e.g., rough textured stone, weathered dark oak, polished brass), and the exact physical objects present. The prompt must be so concrete and detailed that a painter can depict a highly specific, realistic, and rich scene from it.
+7. **Style Medium Domination (Never Break the Canvas):**
+   - You must strictly respect the channel's active visual style and medium ({CHANNEL_VISUAL_STYLE}).
+   - Every single scene, object, character, or metaphor you describe—even when depicting complex, modern, or high-tech concepts (such as databases, code screens, server vaults, circuit boards, or clockwork)—must be described **strictly within the boundaries of that visual medium**.
+   - E.g., if ({CHANNEL_VISUAL_STYLE}) specifies a **Whiteboard Marker** drawing, describe all servers, vaults, or interfaces exclusively as *clean, hand-drawn marker sketches on a pure white dry-erase board, with bold black outlines and minimal spot color fills*. Never describe realistic 3D lighting, dark atmospheric screen-glows, or cinematic volumetric shadows if they break the flat hand-drawn nature of the whiteboard canvas.
+   - Never mix media: do not request realistic 3D renders or cinematic camera properties (like "lens flare" or "volumetric smoke") if the active style notes specify flat vectors, 2D cartoons, watercolor washes, or line-art.
+8. **High-Information Visual Trigger Phrases (Banish Vague Pacing Anchors):**
+   - Every visual beat's **phrase** (verbatim 1-5 words from the narration) must be a high-retention, contextually rich noun or verb that carries strong semantic weight (e.g., "dispatch to a pure reducer", "serialize the state object", "survive reloads", "deeply persisted to indexedDB").
+   - Never use lazy, vague, or non-representational words or transitional filler phrases (such as "Now, this", "But there's", "And then", "For example") as trigger anchors. The visual change must pop precisely when the viewer's brain encounters the new concepts.
 
 Return JSON matching the specific act schema: actId, displayTitle, narrationBlocks (narration text + visualBeats), and curiosityBridge.`;
 

@@ -131,13 +131,13 @@ STYLE_VIDEOS_CONFIG = {
         )
     },
     "style_whiteboard": {
-        "title": "Agentic AI Foundations & Statecharts",
+        "title": "State Reducers & Deep Persistence",
         "voice": "Fenrir",
         "voice_speed": 0.98,
         "brief": (
-            "Write an informative, highly educational whiteboard video about Agentic AI foundations and Statecharts. Only 2 acts total. "
-            "Act 1: mess (1 short block: explain the chaos of building LLM agents with raw loops that lead to infinite prompt recursion, deadlocks, and uncontrollable agent loops). "
-            "Act 2: way_forward (1 short block: explain the solution of using statecharts, deterministic transitions, states, and hierarchical workflows to build bulletproof, production-ready AI agents). "
+            "Write an informative, highly educational whiteboard video explaining State Reducers and Deep Persistence. Only 2 acts total. "
+            "Act 1: State Reducers (explain how actions dispatch to a pure reducer function, transitioning the state cleanly and deterministically). "
+            "Act 2: Deep Persistence (explain how this structured state is serialized and deeply persisted to local storage or indexedDB to survive reloads). "
             "Keep narration under 60 words total."
         )
     },
