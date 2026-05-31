@@ -28,13 +28,18 @@ import type { PersistedThumbnailMeta } from "@/lib/studio/persisted-thumbnail-me
 import { persistedThumbnailImageUrl } from "@/lib/studio/persisted-thumbnail-url";
 import { ThumbnailImagePreview } from "@/components/studio/thumbnail-image-preview";
 
-const PILLAR_LABEL: Record<ContentPillar, string> = {
+const PILLAR_LABEL: Record<string, string> = {
   overthinking: "Overthinking",
   emotional_armor: "Emotional armor",
   identity_clarity: "Identity clarity",
   social_dynamics: "Social dynamics",
   habit_architecture: "Habit architecture",
 };
+
+function getPillarLabel(pillar: string): string {
+  if (pillar in PILLAR_LABEL) return PILLAR_LABEL[pillar]!;
+  return pillar.split(/[_-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
 
 type IdeaResultCardProps = {
   idea: VideoIdea;
@@ -258,7 +263,7 @@ export function IdeaResultCard({
               tileTop
             />
             <span className="pointer-events-none absolute bottom-1.5 right-1.5 max-w-[70%] truncate rounded bg-black/85 px-1.5 py-0.5 text-[10px] font-medium text-white">
-              {PILLAR_LABEL[idea.pillar]}
+              {getPillarLabel(idea.pillar)}
             </span>
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
@@ -377,7 +382,7 @@ export function IdeaResultCard({
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge variant="secondary" className="font-normal text-[10px]">
-                {PILLAR_LABEL[idea.pillar]}
+                {getPillarLabel(idea.pillar)}
               </Badge>
               <span className="text-[10px] text-muted-foreground capitalize">
                 Glow: {idea.thumbnailTextGlow}
@@ -510,7 +515,7 @@ export function IdeaResultCard({
         <CardContent className="flex flex-col gap-3 pt-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="font-normal">
-              {PILLAR_LABEL[idea.pillar]}
+              {getPillarLabel(idea.pillar)}
             </Badge>
             <span className="text-[11px] text-muted-foreground">
               Glow: {idea.thumbnailTextGlow}

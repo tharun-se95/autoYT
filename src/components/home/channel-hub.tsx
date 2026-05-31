@@ -3,13 +3,26 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Film, Lightbulb, Search } from "lucide-react";
+import { Film, Lightbulb, Search, Tv2 } from "lucide-react";
 
+import {
+  getChannelDetails,
+  getChannelsList,
+  type ChannelDeskDetail,
+  type ChannelSimple,
+} from "@/app/actions/channel-styles";
 import { listStudioIdeaBatches } from "@/app/actions/studio-ideas";
 import { ContentArchitectForm } from "@/components/studio/content-architect-form";
 import { ProductionQueueCard } from "@/components/production/production-queue-card";
 import { SectionContainer } from "@/components/landing/section-container";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   addCommissionedVideo,
@@ -58,6 +71,26 @@ function progressScore(v: CommissionedVideo): number {
   );
 }
 
+function channelInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+}
+
+function paletteGradient(colors: string[]): string {
+  if (colors.length === 0) {
+    return "linear-gradient(135deg, hsl(var(--primary)/0.9), hsl(var(--primary)))";
+  }
+  if (colors.length === 1) {
+    return `linear-gradient(135deg, ${colors[0]}, ${colors[0]})`;
+  }
+  return `linear-gradient(135deg, ${colors[0]}, ${colors[1] ?? colors[0]})`;
+}
+
+const FALLBACK_CHANNEL_DESCRIPTION =
+  "Video production desk — start an episode to unlock Script, Audio, then Visuals. Brainstorm ideas on Upcoming before you lock a commission.";
+
 export function ChannelHub() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -66,10 +99,69 @@ export function ChannelHub() {
   const batchSort = batchSortFromParam(searchParams.get("batches"));
   const [videos, setVideos] = useState<CommissionedVideo[]>([]);
   const [ideaBatches, setIdeaBatches] = useState<StudioIdeaBatchListItem[]>([]); // NEW: State for idea batches
+  const [channels, setChannels] = useState<ChannelSimple[]>([]);
+  const [activeChannel, setActiveChannel] = useState<ChannelDeskDetail | null>(
+    null
+  );
+  const [channelsLoading, setChannelsLoading] = useState(true);
   const [hydrated, setHydrated] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [videoSearch, setVideoSearch] = useState("");
   const [upcomingSearch, setUpcomingSearch] = useState("");
+
+  const channelParam = searchParams.get("channel");
+
+  const activeChannelId = useMemo(() => {
+    if (channelParam && channels.some((c) => c.id === channelParam)) {
+      return channelParam;
+    }
+    return channels[0]?.id ?? null;
+  }, [channelParam, channels]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setChannelsLoading(true);
+      const list = await getChannelsList();
+      if (cancelled) return;
+      setChannels(list);
+      setChannelsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!activeChannelId) {
+      setActiveChannel(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const detail = await getChannelDetails(activeChannelId);
+      if (cancelled) return;
+      setActiveChannel(detail);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeChannelId]);
+
+  useEffect(() => {
+    setDescExpanded(false);
+  }, [activeChannelId]);
+
+  const setChannelParam = useCallback(
+    (nextChannelId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("channel", nextChannelId);
+      router.replace(`${CHANNEL_DESK_PATH}?${params.toString()}`, {
+        scroll: false,
+      });
+    },
+    [router, searchParams]
+  );
 
   // NEW: Function to refresh idea batches
   const refreshIdeaBatches = useCallback(async () => {
@@ -193,8 +285,23 @@ export function ChannelHub() {
   }, [sortedVideos, videoSearch]);
 
   const videoCount = videos.length;
+  const channelTitle = activeChannel?.name ?? "Creator Channel";
+  const channelHandle = activeChannel?.handle
+    ? `@${activeChannel.handle.replace(/^@/, "")}`
+    : activeChannel
+      ? `@${activeChannel.id}`
+      : "@CreatorStudio";
   const channelDescription =
-    "Video production desk — start an episode to unlock Script, Audio, then Visuals. Brainstorm ideas on Upcoming before you lock a commission.";
+    activeChannel?.generation_brief?.trim() || FALLBACK_CHANNEL_DESCRIPTION;
+  const avatarInitials = channelInitials(channelTitle);
+  const avatarGradient = paletteGradient(activeChannel?.palette_hex ?? []);
+  const bannerStyle = activeChannel?.banner_image_url
+    ? {
+        backgroundImage: `url(${activeChannel.banner_image_url})`,
+        backgroundSize: "cover" as const,
+        backgroundPosition: "center" as const,
+      }
+    : undefined;
 
   const sortChips: { id: SortKey; label: string }[] = [
     { id: "latest", label: "Latest" },
@@ -226,12 +333,63 @@ export function ChannelHub() {
   return (
     <section id="channel-hub" className="scroll-mt-20 pb-10 sm:pb-14">
       <SectionContainer className="max-w-7xl">
+        {/* Channel selector */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Active channel
+            </p>
+            {channelsLoading ? (
+              <div className="h-10 w-full max-w-xs animate-pulse rounded-lg border border-white/10 bg-white/[0.04]" />
+            ) : channels.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No channels configured in Supabase.
+              </p>
+            ) : (
+              <Select
+                value={activeChannelId ?? undefined}
+                onValueChange={(value: string | null) => {
+                  if (value) setChannelParam(value);
+                }}
+              >
+                <SelectTrigger
+                  aria-label="Select active channel"
+                  className="h-10 w-full max-w-xs border-white/10 bg-white/[0.04] shadow-sm ring-1 ring-white/5 sm:max-w-sm"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Tv2 className="size-4 shrink-0 text-primary" aria-hidden />
+                    <SelectValue placeholder="Select channel" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {channels.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      {channel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </div>
+
         {/* Banner */}
         <div className="overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1a] shadow-sm sm:rounded-2xl">
-          <div className="relative flex h-[100px] items-center justify-center bg-gradient-to-br from-zinc-800 via-zinc-900 to-black sm:h-[140px] md:h-[160px]">
-            <p className="font-heading text-2xl font-semibold tracking-tight text-white/95 sm:text-3xl md:text-4xl">
-              Creator Studio
-            </p>
+          <div
+            className={cn(
+              "relative flex h-[100px] items-center justify-center sm:h-[140px] md:h-[160px]",
+              !bannerStyle &&
+                "bg-gradient-to-br from-zinc-800 via-zinc-900 to-black"
+            )}
+            style={bannerStyle}
+          >
+            {!bannerStyle ? (
+              <p className="font-heading text-2xl font-semibold tracking-tight text-white/95 sm:text-3xl md:text-4xl">
+                {channelTitle}
+              </p>
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
+            )}
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.06]"
               style={{
@@ -248,25 +406,30 @@ export function ChannelHub() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:gap-5">
               <div
-                className="size-[72px] shrink-0 rounded-full border-4 border-background bg-gradient-to-br from-primary/90 to-primary shadow-md ring-1 ring-white/10 sm:size-[88px]"
+                className="size-[72px] shrink-0 overflow-hidden rounded-full border-4 border-background shadow-md ring-1 ring-white/10 sm:size-[88px]"
+                style={{ background: avatarGradient }}
                 aria-hidden
               >
-                <div className="flex size-full items-center justify-center font-heading text-xl font-bold tracking-tight text-primary-foreground sm:text-2xl">
-                  CS
+                <div className="flex size-full items-center justify-center font-heading text-xl font-bold tracking-tight text-white sm:text-2xl">
+                  {avatarInitials}
                 </div>
               </div>
               <div className="min-w-0 pb-0.5">
                 <h1 className="font-heading text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                  Creator Channel
+                  {channelTitle}
                 </h1>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  <span className="text-foreground/90">@CreatorStudio</span>
+                  <span className="text-foreground/90">{channelHandle}</span>
                   <span className="mx-1.5 text-white/25">·</span>
                   <span>
                     {videoCount} {videoCount === 1 ? "video" : "videos"}
                   </span>
-                  <span className="mx-1.5 text-white/25">·</span>
-                  <span>Channel DNA v1.0</span>
+                  {activeChannel ? (
+                    <>
+                      <span className="mx-1.5 text-white/25">·</span>
+                      <span>{activeChannel.id}</span>
+                    </>
+                  ) : null}
                 </p>
                 <p className="mt-2 max-w-2xl text-sm leading-snug text-muted-foreground">
                   {descExpanded ? (
@@ -514,6 +677,7 @@ export function ChannelHub() {
             <div role="region" aria-labelledby="hub-tab-upcoming">
               <ContentArchitectForm
                 channelLayout
+                channelId={activeChannelId}
                 batchSort={batchSort}
                 ideaSearchQuery={upcomingSearch}
                 onCommissionIdea={onCommissionIdea}

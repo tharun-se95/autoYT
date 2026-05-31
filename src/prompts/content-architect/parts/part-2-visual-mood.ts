@@ -1,14 +1,8 @@
-import { CHANNEL_VISUAL_STYLE_PROMPT } from "@/lib/channel-visual-style";
-import { CYBER_STOIC_PALETTE_PROMPT } from "@/lib/channel-palette";
-import { HOST_MODEL_SHEET_PROSE } from "@/prompts/shared/host-model-sheet";
-
 export function part2VisualMoodAndThumbnailStrategy(): string {
   return `## Official visual language and thumbnail strategy
-${CHANNEL_VISUAL_STYLE_PROMPT}
+- **Art Direction & Style Notes:** {CHANNEL_VISUAL_STYLE}
 
-${CYBER_STOIC_PALETTE_PROMPT}
-
-**Character lock (every thumbnail):** ${HOST_MODEL_SHEET_PROSE}
+**Character lock (every thumbnail):** {HOST_PROSE}
 
 **Thumbnail job:** One **16:9** narrative explainer panel. Illustrate key thematic elements, scenes, or concepts to match the video hook. Externalize internal thoughts and actions into clear symbolic settings. Leave negative space for overlay text.
 

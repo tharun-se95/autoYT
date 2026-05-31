@@ -20,13 +20,7 @@ import {
 import { loadScriptDocumentForVideo } from "@/lib/studio/load-script-document";
 import type { ScriptDocument } from "@/lib/script-writer/types";
 
-const PILLARS = new Set<ContentPillar>([
-  "overthinking",
-  "emotional_armor",
-  "identity_clarity",
-  "social_dynamics",
-  "habit_architecture",
-]);
+
 
 function defaultIdeaFromScript(script: ScriptDocument): VideoIdea {
   const title = script.workingTitle.trim() || "Untitled production";
@@ -87,9 +81,9 @@ async function readBootstrapMeta(
     const idea = o.idea;
     if (!idea || typeof idea !== "object") return null;
     const i = idea as Record<string, unknown>;
-    const pillar = typeof i.pillar === "string" && PILLARS.has(i.pillar as ContentPillar)
-      ? (i.pillar as ContentPillar)
-      : "overthinking";
+    const pillar = typeof i.pillar === "string" && i.pillar.trim().length > 0
+      ? i.pillar
+      : "general";
     const glow: ThumbnailTextGlow =
       i.thumbnailTextGlow === "amber" ? "amber" : "cyan";
     const videoIdea: VideoIdea = {

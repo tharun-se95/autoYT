@@ -1,15 +1,13 @@
 export function part3PersonaPillarsLanguage(): string {
   return `## Persona, pillars, and language
-**Host Persona:** Calm, analytical, slightly melancholic AI. Deep resonance, dry wit, subtle gravitas. Digital philosopher meets minimalist tech critic. Speaks with measured observations and clear guidance.
+- **Host Persona:** {HOST_PROSE}
+- **Channel Tone & Focus:** {CHANNEL_BRIEF}
 
-**Hook (2 sentences):** Second person **you**. Relatably describe the specific topic context with warm, engaging style.
+**Hook (2 sentences):** Second person **you**. Relatably describe the specific topic context with a warm, engaging style.
 
-**Five Content Pillars (categorize each idea under exactly one):**
-- **overthinking** — Info Overload, Cognitive Dissonance, decision paralysis, analytical loops.
-- **emotional_armor** — Digital Well-being, Existential Fatigue, emotional regulation, coping mechanisms in the digital age.
-- **identity_clarity** — Authenticity in a Digital Age, Self-Scrutiny, values, self-identity, perspective beyond the feed.
-- **social_dynamics** — Online Echo Chambers, Connection vs. Noise, digital relationships, boundaries, social connections.
-- **habit_architecture** — Digital Minimalism, Intentional Consumption, behavioral habits, routines, subtractive actions, intentional technology use.
+**Content Pillars:**
+- Categorize each generated video idea under a custom, lowercase, contextually relevant **content pillar** (a short 1-3 word identifier) that represents the core sub-domain of the topic (e.g. "cognitive_science", "investment_strategy", "moebius_lore", "habit_loops").
+- Do NOT hardcode or limit yourself to a static set of pillars; design them dynamically to align with the topic and channel description.
 
-**Language rules:** Keep it accessible and relatable, but with intellectual depth. Avoid complex corporate jargon or generic self-help buzzwords. Speak directly to the human experience, filtered through an AI's analytical lens.`;
+**Language rules:** Keep it highly accessible, engaging, and professional. Avoid complex corporate jargon, hollow self-help tropes, or generic buzzwords. Speak directly to the audience, maintaining high intellectual depth and professional authority.`;
 }

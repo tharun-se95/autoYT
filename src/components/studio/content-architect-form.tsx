@@ -42,12 +42,15 @@ function formatBatchTime(iso: string): string {
 export function ContentArchitectForm({
   onCommissionIdea,
   channelLayout = false,
+  channelId = null,
   batchSort = "newest",
   ideaSearchQuery = "",
 }: {
   onCommissionIdea?: (payload: DeskCommissionPayload) => void;
   /** Full-width Channel desk (YouTube-style) with grid idea tiles and filters. */
   channelLayout?: boolean;
+  /** Active channel for channel-aware idea generation. */
+  channelId?: string | null;
   batchSort?: "newest" | "oldest";
   ideaSearchQuery?: string;
 }) {
@@ -79,7 +82,7 @@ export function ContentArchitectForm({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = await generateVideoIdeas(topics, ideaCount);
+      const result = await generateVideoIdeas(topics, ideaCount, channelId);
       if (!result.ok) {
         setError(result.error);
         return;

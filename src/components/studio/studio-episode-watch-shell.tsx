@@ -67,13 +67,18 @@ import {
 
 const PROMPT_EXCERPT_LEN = 960;
 
-const PILLAR_LABEL: Record<ContentPillar, string> = {
+const PILLAR_LABEL: Record<string, string> = {
   overthinking: "Overthinking",
   emotional_armor: "Emotional armor",
   identity_clarity: "Identity clarity",
   social_dynamics: "Social dynamics",
   habit_architecture: "Habit architecture",
 };
+
+function getPillarLabel(pillar: string): string {
+  if (pillar in PILLAR_LABEL) return PILLAR_LABEL[pillar]!;
+  return pillar.split(/[_-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
 
 function stageFromPath(pathname: string): "script" | "audio" | "visuals" {
   if (pathname.includes("/visuals")) return "visuals";
@@ -248,7 +253,7 @@ function ScriptDetailsBlock({ videoId }: { videoId: string }) {
               variant="secondary"
               className="h-5 px-1.5 py-0 text-[10px] font-normal"
             >
-              {PILLAR_LABEL[video.idea.pillar]}
+              {getPillarLabel(video.idea.pillar)}
             </Badge>
             <span className="text-[10px] text-muted-foreground">
               Glow: {video.idea.thumbnailTextGlow}

@@ -11,7 +11,9 @@ import "@/prompts/init";
 import {
   DEFAULT_PROMPT_VERSIONS,
   getPrompt,
+  getPromptWithFallback,
 } from "@/prompts/registry";
+import { createServiceSupabase } from "@/lib/supabase/admin-client";
 import {
   type ContentPillar,
   type ContentTone,
@@ -75,8 +77,7 @@ const IDEA_SCHEMA = {
     },
     pillar: {
       type: SchemaType.STRING,
-      format: "enum" as const,
-      enum: PILLAR_VALUES,
+      description: "Custom, lowercase, contextually relevant content pillar keyword (short 1-3 words) dynamically tailored to the topic domain (e.g. 'cognitive_science', 'space_history', 'habit_loops', 'investing').",
     },
     suggestedTone: {
       type: SchemaType.STRING,
@@ -123,13 +124,7 @@ const MIN_COUNT = 3;
 const MAX_COUNT = 12;
 
 function isContentPillar(s: string): s is ContentPillar {
-  return (
-    s === "overthinking" ||
-    s === "emotional_armor" ||
-    s === "identity_clarity" ||
-    s === "social_dynamics" ||
-    s === "habit_architecture"
-  );
+  return typeof s === "string" && s.trim().length > 0;
 }
 
 function isThumbnailTextGlow(s: string): s is ThumbnailTextGlow {
@@ -202,7 +197,8 @@ function normalizeIdeas(raw: unknown): VideoIdea[] | null {
  */
 export async function generateVideoIdeas(
   topics: string,
-  ideaCount: number = DEFAULT_COUNT
+  ideaCount: number = DEFAULT_COUNT,
+  channelId?: string | null
 ): Promise<GenerateIdeasResult> {
   const key = process.env.GEMINI_API_KEY;
   if (!key?.trim()) {
@@ -232,16 +228,56 @@ export async function generateVideoIdeas(
     Math.max(MIN_COUNT, Math.floor(ideaCount) || DEFAULT_COUNT)
   );
 
-  const genAI = new GoogleGenerativeAI(key);
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: getPrompt(
+    const genAI = new GoogleGenerativeAI(key);
+
+    let channelName = "Minimalist Video Explainer";
+    let channelBrief = "Minimalist philosophy, intentional living, and subtraction.";
+    let channelVisualNotes = "Clean, high-contrast flat graphic minimal illustration style.";
+    let hostProse = "A friendly, calm, and highly expressive animated character who guides the viewer.";
+
+    if (channelId) {
+      const supabase = createServiceSupabase();
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("channels")
+          .select("*")
+          .eq("id", channelId)
+          .maybeSingle();
+        if (!error && data) {
+          channelName = data.name || channelName;
+          channelBrief = data.generation_brief || channelBrief;
+          channelVisualNotes = data.visual_style_notes || channelVisualNotes;
+        }
+      }
+      
+      const customHost = await getPromptWithFallback(
+        "HOST_MODEL_SHEET_PROSE",
+        "v1.0",
+        channelId
+      );
+      if (customHost && customHost.trim()) {
+        hostProse = customHost;
+      }
+    }
+
+    const rawArchitectPrompt = await getPromptWithFallback(
       "CONTENT_ARCHITECT_SYSTEM",
       DEFAULT_PROMPT_VERSIONS.CONTENT_ARCHITECT_SYSTEM,
-    ),
-  });
+      channelId
+    );
 
-  const userText = `The viewer / producer listed these topics, themes, or seeds for upcoming videos. Turn them into ${count} strong, distinct video ideas.\n\n---\n${trimmed}\n---\n\nReturn exactly ${count} ideas as JSON matching the response schema. Follow the **entire** system instruction (do not restate those rules here). Vary pillars when it fits the topics.`;
+    const compiledArchitectPrompt = rawArchitectPrompt
+      .replace(/{CHANNEL_NAME}/g, channelName)
+      .replace(/{CHANNEL_BRIEF}/g, channelBrief)
+      .replace(/{CHANNEL_VISUAL_STYLE}/g, channelVisualNotes)
+      .replace(/{HOST_PROSE}/g, hostProse);
+
+    const model = genAI.getGenerativeModel({
+      model: MODEL,
+      systemInstruction: compiledArchitectPrompt,
+    });
+
+    const userText = `The viewer / producer listed these topics, themes, or seeds for upcoming videos. Turn them into ${count} strong, distinct video ideas.\n\n---\n${trimmed}\n---\n\nReturn exactly ${count} ideas as JSON matching the response schema. Follow the **entire** system instruction (do not restate those rules here). Vary custom content pillars dynamically when it fits the topics.`;
 
   try {
     const result = await model.generateContent({

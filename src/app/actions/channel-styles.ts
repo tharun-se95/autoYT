@@ -9,6 +9,22 @@ export interface ChannelSimple {
   palette_hex: string[];
 }
 
+/** Full channel row fields used by the Creator Desk header. */
+export interface ChannelDeskDetail {
+  id: string;
+  name: string;
+  handle: string | null;
+  banner_image_url: string | null;
+  /** Channel description shown on the desk (maps to `generation_brief`). */
+  generation_brief: string | null;
+  palette_hex: string[];
+}
+
+function parsePaletteHex(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((c): c is string => typeof c === "string" && c.length > 0);
+}
+
 export async function getChannelsList(): Promise<ChannelSimple[]> {
   const supabase = createServiceSupabase();
   if (!supabase) return [];
@@ -22,7 +38,41 @@ export async function getChannelsList(): Promise<ChannelSimple[]> {
     console.error("[actions/channel-styles] failed to list channels:", error);
     return [];
   }
-  return data as ChannelSimple[];
+  return data.map((row) => ({
+    id: row.id,
+    name: row.name,
+    palette_hex: parsePaletteHex(row.palette_hex),
+  }));
+}
+
+export async function getChannelDetails(
+  channelId: string
+): Promise<ChannelDeskDetail | null> {
+  const supabase = createServiceSupabase();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("channels")
+    .select("id, name, handle, banner_image_url, generation_brief, palette_hex")
+    .eq("id", channelId)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error(
+      "[actions/channel-styles] failed to load channel details:",
+      error
+    );
+    return null;
+  }
+
+  return {
+    id: data.id,
+    name: data.name,
+    handle: data.handle,
+    banner_image_url: data.banner_image_url,
+    generation_brief: data.generation_brief,
+    palette_hex: parsePaletteHex(data.palette_hex),
+  };
 }
 
 export interface VisualStyleInput {

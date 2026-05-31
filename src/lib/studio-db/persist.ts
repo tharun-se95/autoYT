@@ -28,13 +28,7 @@ type GeneratedIdeaSelectedRow = Pick<
 >;
 
 function isContentPillar(s: string): s is ContentPillar {
-  return (
-    s === "overthinking" ||
-    s === "emotional_armor" ||
-    s === "identity_clarity" ||
-    s === "social_dynamics" ||
-    s === "habit_architecture"
-  );
+  return typeof s === "string" && s.trim().length > 0;
 }
 
 function isThumbnailTextGlow(s: string): s is ThumbnailTextGlow {
