@@ -24,9 +24,11 @@ import {
   repairScriptBlockOpenings,
 } from "@/lib/script-writer/validate-block-openings";
 import { normalizeScript } from "@/lib/script-writer/normalize-script-document";
-import type { GenerateScriptResult, ScriptActId } from "@/lib/script-writer/types";
+import type { GenerateScriptResult, ScriptAct, ScriptActId } from "@/lib/script-writer/types";
 
 const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+const AUDIT_PASS_THRESHOLD = 8;
+const MAX_ACT_AUDIT_ATTEMPTS = 3;
 
 const ACT_IDS: ScriptActId[] = [
   "mess",
@@ -109,6 +111,86 @@ const ACT_RESPONSE_SCHEMA: ResponseSchema = {
   },
   required: ["actId", "displayTitle", "narrationBlocks", "curiosityBridge"],
 };
+
+/** Pre-flight audit response from the Hook Architect & Pacing Evaluator consultant. */
+const AUDIT_RESPONSE_SCHEMA: ResponseSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    passed: {
+      type: SchemaType.BOOLEAN,
+      description:
+        "True only when hook, pacing, and visualComposition scores are all >= 8.",
+    },
+    scores: {
+      type: SchemaType.OBJECT,
+      properties: {
+        hook: {
+          type: SchemaType.INTEGER,
+          description: "Verbal hook retention score 0–10.",
+        },
+        pacing: {
+          type: SchemaType.INTEGER,
+          description: "Dynamic visual beat pacing score 0–10.",
+        },
+        visualComposition: {
+          type: SchemaType.INTEGER,
+          description: "Visual still composition and medium discipline score 0–10.",
+        },
+      },
+      required: ["hook", "pacing", "visualComposition"],
+    },
+    critiques: {
+      type: SchemaType.OBJECT,
+      properties: {
+        hook: {
+          type: SchemaType.STRING,
+          description: "Blunt critique of verbal hook quality.",
+        },
+        pacing: {
+          type: SchemaType.STRING,
+          description: "Blunt critique of trigger phrase intervals and beat density.",
+        },
+        visualComposition: {
+          type: SchemaType.STRING,
+          description:
+            "Blunt critique of foreground/midground/background layers, lighting, and medium discipline.",
+        },
+      },
+      required: ["hook", "pacing", "visualComposition"],
+    },
+    directorsInstruction: {
+      type: SchemaType.STRING,
+      description:
+        "Single imperative paragraph of numbered action items for the scriptwriter rewrite.",
+    },
+  },
+  required: ["passed", "scores", "critiques", "directorsInstruction"],
+};
+
+type AuditScores = {
+  hook: number;
+  pacing: number;
+  visualComposition: number;
+};
+
+type ConsultantAuditResult = {
+  passed: boolean;
+  scores: AuditScores;
+  critiques: {
+    hook: string;
+    pacing: string;
+    visualComposition: string;
+  };
+  directorsInstruction: string;
+};
+
+function auditScoresPass(scores: AuditScores): boolean {
+  return (
+    scores.hook >= AUDIT_PASS_THRESHOLD &&
+    scores.pacing >= AUDIT_PASS_THRESHOLD &&
+    scores.visualComposition >= AUDIT_PASS_THRESHOLD
+  );
+}
 
 const MIN_BRIEF = 24;
 const MAX_BRIEF = 8000;
@@ -234,7 +316,7 @@ export async function generateScript(
     }
 
     // Step 2: Act-by-Act Sequential Loop
-    const generatedActs = [];
+    const generatedActs: ScriptAct[] = [];
     
     const rawActPrompt = await getPromptWithFallback(
       "ACT_WRITER_SYSTEM",
@@ -257,53 +339,144 @@ export async function generateScript(
       systemInstruction: compiledActPrompt + actConstraint,
     });
 
-    for (let i = 0; i < outlineJson.acts.length; i++) {
+    const rawConsultantPrompt = await getPromptWithFallback(
+      "CONSULTANT_AUDIT_SYSTEM",
+      DEFAULT_PROMPT_VERSIONS.CONSULTANT_AUDIT_SYSTEM,
+      channelId
+    );
+
+    const totalActs = outlineJson.acts.length;
+
+    for (let i = 0; i < totalActs; i++) {
       const actOutline = outlineJson.acts[i];
       const actPath = path.join(cacheDir, `act_${actOutline.actId}.json`);
 
       if (fs.existsSync(actPath)) {
         console.info(`[script-writer] Pipeline Step 2.${i + 1}: Loading cached Act "${actOutline.actId}" (${actOutline.displayTitle})...`);
-        const actJson = JSON.parse(fs.readFileSync(actPath, "utf-8"));
+        const actJson = JSON.parse(fs.readFileSync(actPath, "utf-8")) as ScriptAct;
         generatedActs.push(actJson);
         continue;
       }
 
       console.info(`[script-writer] Pipeline Step 2.${i + 1}: Writing Act "${actOutline.actId}" (${actOutline.displayTitle})...`);
 
-      // Inject preceding generated narration context for seamless continuity
-      const historyContext = generatedActs.map((act, idx) => {
-        return `### Previously Generated Act ${idx + 1}: ${act.displayTitle}\n${act.narrationBlocks.map((b: any) => b.narration).join("\n")}`;
-      }).join("\n\n");
+      const isOpeningAct = i === 0;
+      const compiledConsultantPrompt = rawConsultantPrompt
+        .replace(/{CHANNEL_NAME}/g, channelName)
+        .replace(/{CHANNEL_BRIEF}/g, channelBrief)
+        .replace(/{CHANNEL_VISUAL_STYLE}/g, channelVisualNotes)
+        .replace(/{ACT_POSITION}/g, isOpeningAct ? "Opening Act (Hook Zone)" : `Middle/Closing Act ${i + 1}`)
+        .replace(/{ACT_NUMBER}/g, String(i + 1))
+        .replace(/{TOTAL_ACTS}/g, String(totalActs))
+        .replace(/{IS_OPENING_ACT}/g, isOpeningAct ? "YES" : "NO");
 
-      const actUserText = [
-        `Write Act ${i + 1} of the script based on this blueprint:`,
-        `Episode Brief: ${trimmed}`,
-        `Narrative Archetype: ${outlineJson.narrativeArchetype}`,
-        `Act Blueprint:`,
-        `- Act ID: ${actOutline.actId}`,
-        `- Title: ${actOutline.displayTitle}`,
-        `- Core Focus: ${actOutline.theme}`,
-        `- Concrete Examples to weave in: ${actOutline.miniExamples.join(", ")}`,
-        `- Word Target: ~${actOutline.targetWordCount} words`,
-        historyContext ? `\n--- PRECEDING SCRIPT HISTORY (maintain absolute character tone & context flow): ---\n${historyContext}\n--- END PRECEDING HISTORY ---` : "",
-        `\nProvide narrationBlocks containing 3-6 sentences per block and detailed visual beats supporting dynamic scene-to-scene pacing (no still runs >5s).`
-      ].join("\n");
-
-      const actResponse = await actModel.generateContent({
-        contents: [{ role: "user", parts: [{ text: actUserText }] }],
-        generationConfig: {
-          temperature: 0.85,
-          maxOutputTokens: 4096,
-          responseMimeType: "application/json",
-          responseSchema: ACT_RESPONSE_SCHEMA,
-        },
+      const consultantModel = genAI.getGenerativeModel({
+        model: MODEL,
+        systemInstruction: compiledConsultantPrompt,
       });
 
-      const actJson = JSON.parse(actResponse.response.text());
+      // Inject preceding generated narration context for seamless continuity
+      const historyContext = generatedActs
+        .map((act, idx) => {
+          return `### Previously Generated Act ${idx + 1}: ${act.displayTitle}\n${act.narrationBlocks.map((b) => b.narration).join("\n")}`;
+        })
+        .join("\n\n");
+
+      const directorInstructions: string[] = [];
+      let actJson: ScriptAct | null = null;
+
+      for (let attempt = 1; attempt <= MAX_ACT_AUDIT_ATTEMPTS; attempt++) {
+        const actUserText = [
+          `Write Act ${i + 1} of the script based on this blueprint:`,
+          `Episode Brief: ${trimmed}`,
+          `Narrative Archetype: ${outlineJson.narrativeArchetype}`,
+          `Act Blueprint:`,
+          `- Act ID: ${actOutline.actId}`,
+          `- Title: ${actOutline.displayTitle}`,
+          `- Core Focus: ${actOutline.theme}`,
+          `- Concrete Examples to weave in: ${actOutline.miniExamples.join(", ")}`,
+          `- Word Target: ~${actOutline.targetWordCount} words`,
+          historyContext
+            ? `\n--- PRECEDING SCRIPT HISTORY (maintain absolute character tone & context flow): ---\n${historyContext}\n--- END PRECEDING HISTORY ---`
+            : "",
+          `\nProvide narrationBlocks containing 3-6 sentences per block and detailed visual beats supporting dynamic scene-to-scene pacing (no still runs >5s).`,
+          ...directorInstructions.map(
+            (instruction) =>
+              `\n--- DIRECTOR'S INSTRUCTION (mandatory rewrite fixes from Executive Consultant): ---\n${instruction}\n--- END DIRECTOR'S INSTRUCTION ---`
+          ),
+        ].join("\n");
+
+        const actResponse = await actModel.generateContent({
+          contents: [{ role: "user", parts: [{ text: actUserText }] }],
+          generationConfig: {
+            temperature: 0.85,
+            maxOutputTokens: 4096,
+            responseMimeType: "application/json",
+            responseSchema: ACT_RESPONSE_SCHEMA,
+          },
+        });
+
+        actJson = JSON.parse(actResponse.response.text()) as ScriptAct;
+
+        console.info(
+          `[script-writer] Hook Architect audit for Act "${actOutline.actId}" (attempt ${attempt}/${MAX_ACT_AUDIT_ATTEMPTS})...`
+        );
+
+        const auditUserText = [
+          `Audit this act JSON for pre-flight approval. Episode brief for context:\n${trimmed}`,
+          `\nAct JSON to audit:\n${JSON.stringify(actJson, null, 2)}`,
+        ].join("\n");
+
+        const auditResponse = await consultantModel.generateContent({
+          contents: [{ role: "user", parts: [{ text: auditUserText }] }],
+          generationConfig: {
+            temperature: 0.25,
+            maxOutputTokens: 2048,
+            responseMimeType: "application/json",
+            responseSchema: AUDIT_RESPONSE_SCHEMA,
+          },
+        });
+
+        const audit = JSON.parse(
+          auditResponse.response.text()
+        ) as ConsultantAuditResult;
+
+        if (auditScoresPass(audit.scores)) {
+          console.info(
+            `[script-writer] Act "${actOutline.actId}" passed audit (hook=${audit.scores.hook}, pacing=${audit.scores.pacing}, visual=${audit.scores.visualComposition})`
+          );
+          break;
+        }
+
+        console.warn(
+          `[script-writer] Act "${actOutline.actId}" failed audit (attempt ${attempt}/${MAX_ACT_AUDIT_ATTEMPTS}):`
+        );
+        console.warn(`  Hook (${audit.scores.hook}/10): ${audit.critiques.hook}`);
+        console.warn(`  Pacing (${audit.scores.pacing}/10): ${audit.critiques.pacing}`);
+        console.warn(
+          `  Visual (${audit.scores.visualComposition}/10): ${audit.critiques.visualComposition}`
+        );
+
+        if (attempt < MAX_ACT_AUDIT_ATTEMPTS) {
+          directorInstructions.push(audit.directorsInstruction);
+          console.info(
+            `[script-writer] Appending Director's Instruction and triggering rewrite...`
+          );
+        } else {
+          console.warn(
+            `[script-writer] Max audit attempts reached for Act "${actOutline.actId}" — proceeding with best effort.`
+          );
+        }
+      }
+
+      if (!actJson) {
+        throw new Error(`Act "${actOutline.actId}" generation produced no output.`);
+      }
+
       const tmpActPath = `${actPath}.${crypto.randomUUID()}.tmp`;
       fs.writeFileSync(tmpActPath, JSON.stringify(actJson, null, 2), "utf-8");
       fs.renameSync(tmpActPath, actPath);
-      
+
       generatedActs.push(actJson);
     }
 

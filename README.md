@@ -28,6 +28,13 @@ The platform has been supercharged from a single-channel minimalist tool into an
 - **Real-Time Quality Gate:** Integrated a robust, on-the-fly vision checking system utilizing Gemini 2.0 Flash to audit generated PNG stills against active style notes, layouts, and forbidden-text constraints.
 - **Prompt Mutation and Healing:** If a still is scored below 7.5 or contains literal text letters/gibberish, the system automatically mutates the visual prompt, appends negative constraints, and regenerates the frame (retrying up to 3 times) to secure pristine, text-free cinematic art.
 
+### 🔍 3.5. AI Hook Architect & Pacing Evaluator (Executive Consultant Gate)
+- **Pre-Flight Quality Gate:** Integrated a fully automated, retention-engineered script and storyboard audit loop (`src/app/actions/script-writer.ts`) sitting directly in the scripting pipeline.
+- **Cynical Critique Framework:** A second Gemini 2.0 Flash instance acting as a cynical YouTube consultant rates each generated act from `0 to 10` across three metrics: Hook Intensity (first 5 seconds of Act 1), Dynamic Pacing (ensuring visual triggers align perfectly with narration word-density and vocal speed guidelines), and Visual Still Composition (auditing layers, focal points, and lighting).
+- **Background Self-Healing (Max 3x):** If any score falls below **8.0**, the consultant returns a detailed critique and a structured `directorsInstruction`. The scriptwriter intercepts this, appends the instruction as a mandatory rewrite command, and automatically triggers an in-background rewrite.
+- **Style Canvas Domination:** Implemented a strict rule that forces all described concepts—even complex, modern server vaults or code screens—to be drawn strictly within the active style notes (e.g., as hand-drawn marker sketches for Whiteboard Marker channels, flat vectors for Techno-bytes) to prevent any style drift or bleed.
+- **High-Information Trigger Phrases:** Banned vague pacing anchors (like `"Now, this"`, `"But there's"`, `"And then"`), forcing the model to select semantically rich noun/verb milestones to trigger visual cuts.
+
 ### 🎙️ 4. Offline Local Speech-Pause Aligner
 - **Zero Cloud Latency:** Replaced ElevenLabs Scribe API with a local Python-based aligner (`scripts/local-aligner.py`).
 - **Millisecond-Perfect Pause Detection:** Uses standard math library and binary buffers to analyze speech-energy peaks (RMS) locally on the host Mac in under 0.05 seconds. It automatically matches trigger-phrases onto natural verbal silence gaps, eliminating API cost and queues.
