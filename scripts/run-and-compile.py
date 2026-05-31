@@ -25,7 +25,7 @@ def kill_port_3000():
         pass
 
 def main():
-    cwd = "/Users/tharunk/Documents/Everyday struggles/upgrade-life"
+    cwd = "/Users/tharunk/Documents/Everyday struggles/autoYT"
     kill_port_3000()
 
     # Create fresh env with required dev server options

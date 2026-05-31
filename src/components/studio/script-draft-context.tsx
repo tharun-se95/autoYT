@@ -18,10 +18,10 @@ import {
 } from "@/lib/script-writer/format-tagged";
 import type { ScriptDocument } from "@/lib/script-writer/types";
 
-export const SCRIPT_DRAFT_UPDATED_EVENT = "upgrade-life:script-draft-updated";
+export const SCRIPT_DRAFT_UPDATED_EVENT = "autoYT:script-draft-updated";
 
 export function scriptDraftStorageKey(videoId: string): string {
-  return `upgrade-life:script-draft:${videoId}`;
+  return `autoYT:script-draft:${videoId}`;
 }
 
 function isScriptDocument(x: unknown): x is ScriptDocument {

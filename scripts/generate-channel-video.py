@@ -128,7 +128,7 @@ def audit_generated_image(image_path, visual_prompt, channel_style_notes, gemini
 
 def main():
     # Load credentials from .env.local
-    env_path = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/.env.local"
+    env_path = "/Users/tharunk/Documents/Everyday struggles/autoYT/.env.local"
     with open(env_path, "r", encoding="utf-8") as f:
         env_content = f.read()
 
@@ -149,7 +149,7 @@ def main():
         "Content-Type": "application/json"
     }
 
-    root_dir = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/local-assets"
+    root_dir = "/Users/tharunk/Documents/Everyday struggles/autoYT/local-assets"
     seagate_music_src = "/Volumes/Seagate/film-agent-app/public/assets/library/ca66f5e44a5564e2b7bacfac3196a106.mp3"
     local_music_dest = os.path.join(root_dir, "bg_music.mp3")
 
@@ -227,7 +227,7 @@ def main():
             if target_channel_id.startswith("ch_style_"):
                 style_id = target_channel_id.replace("ch_style_", "style_")
                 try:
-                    sys.path.insert(0, "/Users/tharunk/Documents/Everyday struggles/upgrade-life/scripts")
+                    sys.path.insert(0, "/Users/tharunk/Documents/Everyday struggles/autoYT/scripts")
                     from compile_style_test_videos import STYLE_VIDEOS_CONFIG
                     if style_id in STYLE_VIDEOS_CONFIG:
                         title = STYLE_VIDEOS_CONFIG[style_id]["title"]
@@ -440,9 +440,9 @@ def main():
         sub_output = os.path.join(asset_sub_dir, "export", "assembly_subtitled.mp4")
         enhanced_output = os.path.join(asset_sub_dir, "export", "assembly_enhanced.mp4")
         
-        venv_python = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/venv/bin/python3"
-        burn_script = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/scripts/burn-subtitles.py"
-        enhance_script = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/scripts/enhance-video.py"
+        venv_python = "/Users/tharunk/Documents/Everyday struggles/autoYT/venv/bin/python3"
+        burn_script = "/Users/tharunk/Documents/Everyday struggles/autoYT/scripts/burn-subtitles.py"
+        enhance_script = "/Users/tharunk/Documents/Everyday struggles/autoYT/scripts/enhance-video.py"
         
         try:
             # 1. Run subtitle burning

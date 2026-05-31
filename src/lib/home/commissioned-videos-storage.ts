@@ -5,10 +5,10 @@ import {
 } from "@/lib/content-architect/types";
 
 /** localStorage key for the in-browser production queue (Videos tab + studio). */
-export const COMMISSIONED_VIDEOS_STORAGE_KEY = "upgrade-life:commissioned-videos";
+export const COMMISSIONED_VIDEOS_STORAGE_KEY = "autoYT:commissioned-videos";
 
 /** Fired on this window after a successful write (same-tab listeners). */
-export const COMMISSIONED_VIDEOS_CHANGED_EVENT = "upgrade-life:commissioned-videos-changed";
+export const COMMISSIONED_VIDEOS_CHANGED_EVENT = "autoYT:commissioned-videos-changed";
 
 export type ProductionStage = "script" | "audio" | "visuals";
 

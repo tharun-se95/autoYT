@@ -24,7 +24,7 @@ def main():
     
     # Defaults
     palette = ["#0f172a", "#f8fafc", "#10b981", "#fbbf24"] # Slate, off-white, emerald, gold
-    env_path = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/.env.local"
+    env_path = "/Users/tharunk/Documents/Everyday struggles/autoYT/.env.local"
 
     if os.path.exists(env_path):
         with open(env_path, "r", encoding="utf-8") as f:

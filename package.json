@@ -1,13 +1,13 @@
 {
-  "name": "upgrade-life",
+  "name": "autoYT",
   "version": "0.1.0",
   "description": "Production studio for the Upgrade Life YouTube channel — ideas, scripts, narration, visuals, and ffmpeg assembly.",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/tharun-se95/upgrade-life.git"
+    "url": "https://github.com/tharun-se95/autoYT.git"
   },
-  "homepage": "https://github.com/tharun-se95/upgrade-life#readme",
+  "homepage": "https://github.com/tharun-se95/autoYT#readme",
   "engines": {
     "node": ">=20.9.0 <25.0.0"
   },

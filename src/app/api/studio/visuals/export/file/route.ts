@@ -66,7 +66,7 @@ export async function GET(request: Request) {
       ? filenameRaw
       : filenameRaw
         ? `${filenameRaw}.mp4`
-        : "upgrade-life-assembly.mp4";
+        : "autoYT-assembly.mp4";
 
   try {
     return await streamMp4FileWithDisposition(exportAbs, {

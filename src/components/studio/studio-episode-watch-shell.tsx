@@ -1574,7 +1574,7 @@ export function StudioEpisodeWatchShell({
   const pathname = usePathname();
   const stage = stageFromPath(pathname);
   const video = getCommissionedVideo(videoId);
-  const workingTitle = video?.workingTitle ?? "upgrade-life";
+  const workingTitle = video?.workingTitle ?? "autoYT";
 
   return (
     <NarrationAudioSegmentsProvider videoId={videoId}>

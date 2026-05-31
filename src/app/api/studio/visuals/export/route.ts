@@ -19,7 +19,7 @@ function sanitizeDownloadFilename(title: string): string {
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "-")
     .slice(0, 80);
-  return base.length > 0 ? `${base}-assembly.mp4` : "upgrade-life-assembly.mp4";
+  return base.length > 0 ? `${base}-assembly.mp4` : "autoYT-assembly.mp4";
 }
 
 export async function POST(request: Request) {

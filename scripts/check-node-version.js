@@ -9,7 +9,7 @@ const [major, minor] = process.versions.node.split(".").map(Number);
 
 if (major < 20 || (major === 20 && minor < 9)) {
   console.error(
-    `[upgrade-life] Node ${process.version} is too old. Next.js 16 requires Node >= 20.9.`,
+    `[autoYT] Node ${process.version} is too old. Next.js 16 requires Node >= 20.9.`,
   );
   process.exit(1);
 }
@@ -28,11 +28,11 @@ if (major >= 25) {
     );
   if (node22) {
     console.warn(
-      `[upgrade-life] Node ${process.version} detected; npm scripts will re-exec Next with Node 22 (${node22}).`,
+      `[autoYT] Node ${process.version} detected; npm scripts will re-exec Next with Node 22 (${node22}).`,
     );
   } else {
     console.warn(
-      `[upgrade-life] Node ${process.version} is newer than supported (see .nvmrc → 22).\n` +
+      `[autoYT] Node ${process.version} is newer than supported (see .nvmrc → 22).\n` +
         "Install Node 22 (e.g. brew install node@22) or set UPGRADE_LIFE_NODE.\n" +
         "If installs look corrupted: rm -rf node_modules .next && npm install",
     );

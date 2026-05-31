@@ -29,7 +29,7 @@ function findNode22() {
 const nodeBin = findNode22();
 if (!nodeBin && major >= 25) {
   console.error(
-    `[upgrade-life] Node ${process.version} is not supported for Next.js dev.\n` +
+    `[autoYT] Node ${process.version} is not supported for Next.js dev.\n` +
       "Install Node 22 LTS, then retry:\n" +
       "  brew install node@22\n" +
       "  brew link --overwrite --force node@22\n" +

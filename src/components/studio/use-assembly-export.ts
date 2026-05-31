@@ -40,7 +40,7 @@ export function useAssemblyExport(videoId: string, workingTitle: string) {
 
         const anchor = document.createElement("a");
         anchor.href = data.downloadUrl;
-        anchor.download = data.filename ?? "upgrade-life-assembly.mp4";
+        anchor.download = data.filename ?? "autoYT-assembly.mp4";
         anchor.rel = "noopener";
         document.body.appendChild(anchor);
         anchor.click();

@@ -206,7 +206,7 @@ def compile_style_video(style_id):
     print("=========================================================")
 
     # 1. Load Supabase config from .env.local
-    env_path = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/.env.local"
+    env_path = "/Users/tharunk/Documents/Everyday struggles/autoYT/.env.local"
     with open(env_path, "r", encoding="utf-8") as f:
         env_content = f.read()
 
@@ -284,12 +284,12 @@ def compile_style_video(style_id):
 
     # 4. Trigger the master compilation python scripts (resuming if assets exist!)
     print("   3. Invoking generation engine sequentially...")
-    root_assets = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/local-assets"
+    root_assets = "/Users/tharunk/Documents/Everyday struggles/autoYT/local-assets"
 
     print(f"      👉 Launching generate-channel-video.py for ch_style_{style_id.replace('style_', '')}...")
     result = subprocess.run([
         "python3", "-u", "scripts/generate-channel-video.py", f"ch_style_{style_id.replace('style_', '')}"
-    ], capture_output=True, text=True, cwd="/Users/tharunk/Documents/Everyday struggles/upgrade-life")
+    ], capture_output=True, text=True, cwd="/Users/tharunk/Documents/Everyday struggles/autoYT")
     
     print(result.stdout)
     if result.stderr:

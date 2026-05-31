@@ -56,7 +56,7 @@ def main():
         "relief of letting space be empty and quiet (Act 4)."
     )
     
-    root_dir = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/local-assets"
+    root_dir = "/Users/tharunk/Documents/Everyday struggles/autoYT/local-assets"
     script_path = os.path.join(root_dir, "vis-stills", video_id, "script.json")
     
     print("=========================================================")
@@ -183,7 +183,7 @@ def main():
         print("🎉 SUCCESS! THE VIDEO WAS GENERATED SUCCESSFULLY END-TO-END!")
         print("=========================================================")
         print(f"Clips stitched: {export_res['clipCount']}")
-        print(f"Output MP4 absolute path: /Users/tharunk/Documents/Everyday struggles/upgrade-life/local-assets/{export_res['relativePath']}")
+        print(f"Output MP4 absolute path: /Users/tharunk/Documents/Everyday struggles/autoYT/local-assets/{export_res['relativePath']}")
         print(f"Local download URL: {export_res['downloadUrl']}")
         print("=========================================================")
     else:

@@ -11,7 +11,7 @@ def main():
     print("=== STARTING AUTONOMOUS IMAGE GENERATION FOR VISUAL LIBRARY ===")
     
     # 1. Load Gemini API Key from .env.local
-    env_path = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/.env.local"
+    env_path = "/Users/tharunk/Documents/Everyday struggles/autoYT/.env.local"
     if not os.path.exists(env_path):
         print("❌ Error: .env.local not found!")
         sys.exit(1)
@@ -27,7 +27,7 @@ def main():
     gemini_key = match_gemini.group(1).strip()
     
     # Create public directory if missing
-    output_dir = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/public/images/styles"
+    output_dir = "/Users/tharunk/Documents/Everyday struggles/autoYT/public/images/styles"
     os.makedirs(output_dir, exist_ok=True)
     
     # 2. Define our 16 visual styles and their representative scene prompts

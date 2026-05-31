@@ -1,5 +1,5 @@
 /** localStorage key for stub audio queue rows (episode workspace). */
-export const AUDIO_DRAFT_STORAGE_KEY_PREFIX = "upgrade-life:audio-draft:";
+export const AUDIO_DRAFT_STORAGE_KEY_PREFIX = "autoYT:audio-draft:";
 
 export type AudioDraftRow = {
   id: string;
@@ -38,10 +38,10 @@ export function writeAudioDraftRows(videoId: string, rows: AudioDraftRow[]): voi
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(audioDraftStorageKey(videoId), JSON.stringify(rows));
-    window.dispatchEvent(new CustomEvent("upgrade-life:audio-draft-updated"));
+    window.dispatchEvent(new CustomEvent("autoYT:audio-draft-updated"));
   } catch {
     /* ignore */
   }
 }
 
-export const AUDIO_DRAFT_UPDATED_EVENT = "upgrade-life:audio-draft-updated";
+export const AUDIO_DRAFT_UPDATED_EVENT = "autoYT:audio-draft-updated";

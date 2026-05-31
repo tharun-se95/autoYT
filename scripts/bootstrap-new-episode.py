@@ -131,7 +131,7 @@ def main() -> int:
     except Exception as e:
         print(f"  (playlist check skipped: {e})", flush=True)
 
-    out_commission = f"/tmp/upgrade-life-commission-{video_id}.json"
+    out_commission = f"/tmp/autoYT-commission-{video_id}.json"
     with open(out_commission, "w", encoding="utf-8") as f:
         json.dump(commission, f, indent=2)
     print(f"\nCommission row (import in browser localStorage): {out_commission}", flush=True)

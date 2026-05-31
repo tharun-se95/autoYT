@@ -31,7 +31,7 @@ function main() {
 // ${marker}
 `;
   fs.writeFileSync(target, src + patch);
-  console.info("[upgrade-life] Patched @next/env for Node 24+ ESM named exports.");
+  console.info("[autoYT] Patched @next/env for Node 24+ ESM named exports.");
 }
 
 main();

@@ -38,7 +38,7 @@ def main():
         sys.exit(1)
 
     # Use the pre-compiled, fully-loaded static FFmpeg binary
-    ffmpeg_path = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/node_modules/ffmpeg-static/ffmpeg"
+    ffmpeg_path = "/Users/tharunk/Documents/Everyday struggles/autoYT/node_modules/ffmpeg-static/ffmpeg"
 
     # Detect video dimensions first
     width, height = None, None
@@ -63,7 +63,7 @@ def main():
 
     # 1. Fetch channel styles from Supabase
     print(f"🌐 Resolving branding colors for channel: '{channel_id}'...")
-    env_path = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/.env.local"
+    env_path = "/Users/tharunk/Documents/Everyday struggles/autoYT/.env.local"
     
     # Load defaults
     palette = ["#0f172a", "#f8fafc", "#10b981", "#fbbf24"] # Slate, off-white, emerald, gold

@@ -58,7 +58,7 @@ def main():
         "Keep narration under 120 words total. Widescreen."
     )
     
-    root_dir = "/Users/tharunk/Documents/Everyday struggles/upgrade-life/local-assets"
+    root_dir = "/Users/tharunk/Documents/Everyday struggles/autoYT/local-assets"
     script_path = os.path.join(root_dir, "vis-stills", video_id, "script.json")
     
     print("=========================================================")
