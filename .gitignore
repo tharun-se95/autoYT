@@ -42,3 +42,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local video pipeline caches & virtual environments
+/.cache/
+/local-assets/
+/venv/
+/.hermes/
+/.codex/
+/*.log
+/*.mp4
+.yarnrc

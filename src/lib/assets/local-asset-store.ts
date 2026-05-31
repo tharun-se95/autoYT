@@ -61,7 +61,7 @@ export function resolveLocalAssetAbsolutePath(relativePath: string): string {
 
 /** `narration-audio/{episodeId}/{actId}-{blockIndex}.wav|mp3` — episodeId is sanitized (alphanumeric + `_-`). */
 const STORED_NARRATION_AUDIO_REL =
-  /^narration-audio\/[a-zA-Z0-9_-]{1,64}\/(mess|deep_dive|mirror|way_forward)-\d{4}\.(wav|mp3)$/i;
+  /^narration-audio\/[a-zA-Z0-9_-]{1,64}\/[a-zA-Z0-9_-]{1,64}-\d{4}\.(wav|mp3)$/i;
 
 export function sanitizeEpisodeIdForAssets(id: string): string {
   const s = id
@@ -172,7 +172,7 @@ export async function writeThumbnailToLocalRoot(
 
 /** `vis-stills/{episodeId}/motion/{actId}-{blockIndex}.mp4` — Ken-burns preview clips. */
 const STORED_VIS_MOTION_REL =
-  /^vis-stills\/[a-zA-Z0-9_-]{1,64}\/motion\/(mess|deep_dive|mirror|way_forward)-\d{4}\.mp4$/i;
+  /^vis-stills\/[a-zA-Z0-9_-]{1,64}\/motion\/[a-zA-Z0-9_-]{1,64}-\d{4}\.mp4$/i;
 
 export function isSafeStoredVisMotionRelativePath(rel: string): boolean {
   const norm = path.posix.normalize(rel.trim().replace(/\\/g, "/"));
@@ -264,7 +264,7 @@ export function visMotionRelativePathForBlock(
 
 /** `vis-stills/{episodeId}/{actId}-{blockIndex}.png` — episodeId sanitized. */
 const STORED_VIS_STILL_REL =
-  /^vis-stills\/[a-zA-Z0-9_-]{1,64}\/(mess|deep_dive|mirror|way_forward)-\d{4}\.png$/i;
+  /^vis-stills\/[a-zA-Z0-9_-]{1,64}\/[a-zA-Z0-9_-]{1,64}-\d{4}\.png$/i;
 
 export type WriteVisStillResult = {
   relativePath: string;

@@ -139,12 +139,18 @@ export async function renderVisMotionBeat(params: {
     };
   }
 
-  let visualBeats = blockVisualBeats;
-  if (visualBeats === undefined) {
+  let visualBeats: VisualBeat[] = [];
+  let block: any = null;
+  if (blockVisualBeats === undefined) {
     const scriptDoc = await loadScriptDocumentForVideo(videoId);
     const act = scriptDoc?.acts?.find((a) => a.actId === actId);
-    const block = act?.narrationBlocks?.[baseBlockIndex];
+    block = act?.narrationBlocks?.[baseBlockIndex];
     visualBeats = block?.visualBeats ?? [];
+  } else {
+    visualBeats = blockVisualBeats;
+    const scriptDoc = await loadScriptDocumentForVideo(videoId);
+    const act = scriptDoc?.acts?.find((a) => a.actId === actId);
+    block = act?.narrationBlocks?.[baseBlockIndex];
   }
 
   if (visualBeats.length > 0 && beatIndex >= visualBeats.length) {
@@ -177,7 +183,7 @@ export async function renderVisMotionBeat(params: {
       audioStartSec = aligned.startSec;
       durationSec = aligned.durationSec;
     } else {
-      const tier2 = resolveBeatAudioTiming(visualBeats, beatIndex, blockDur);
+      const tier2 = resolveBeatAudioTiming(visualBeats, beatIndex, blockDur, block?.narration);
       audioStartSec = tier2.audioStartSec;
       durationSec = tier2.durationSec;
     }

@@ -10,7 +10,7 @@ ${CYBER_STOIC_PALETTE_PROMPT}
 
 **Character lock (every thumbnail):** ${HOST_MODEL_SHEET_PROSE}
 
-**Thumbnail job:** One **16:9** narrative explainer panel. Oscillate **Daily Chaos** vs **Sorted Peace** to match the hook. Externalize internal states (notification avalanches, tangled threads, clean lines). Leave negative space for overlay text.
+**Thumbnail job:** One **16:9** narrative explainer panel. Illustrate key thematic elements, scenes, or concepts to match the video hook. Externalize internal thoughts and actions into clear symbolic settings. Leave negative space for overlay text.
 
 **Overlay (non-negotiable):** 2–6 words, ALL CAPS, ASCII — large readable title-card energy; open a curiosity loop (why / how / what if), not a generic label.`;
 }

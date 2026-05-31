@@ -2,7 +2,7 @@
  * Helpers for Imagen prompts — structured labels and markdown often render as on-image text.
  */
 
-/** Remove markdown and collapse whitespace for model consumption (not for human docs). */
+/** Remove markdown and collapse whitespace for model consumption. */
 export function proseForImagen(text: string): string {
   return text
     .replace(/\*\*/g, "")
@@ -14,27 +14,63 @@ export function proseForImagen(text: string): string {
     .trim();
 }
 
-/** Ken Burns still — style as flowing prose (no section headers or ALL CAPS labels). */
+/**
+ * Soften script [VIS] lines that often trip Imagen RAI (readable text, horror, violence).
+ * Keeps scene intent; does not change style/palette blocks.
+ */
+export function sanitizeSceneForImagen(scene: string): string {
+  let s = proseForImagen(scene);
+
+  s = s.replace(
+    /\b(displaying|display|reads?|reading|labeled|labelled|notification:?|message:?|says?)\s+['"][^'"]+['"]/gi,
+    "showing a blank glowing notification shape with no letters",
+  );
+  s = s.replace(/\bcircles labeled\b/gi, "overlapping abstract color-coded circles");
+  s = s.replace(/\blabeled\s+['"][^'"]+['"]/gi, "with simple abstract color zones");
+  s = s.replace(/['"][A-Za-z][^'"]{2,48}['"]/g, "abstract symbolic marks");
+
+  const replacements: [RegExp, string][] = [
+    [/\bvampire[- ]like\b/gi, "cartoonishly energy-draining"],
+    [/\bdemons\b/gi, "soft gray doubt silhouettes"],
+    [/\bfight(ing)? back\b/gi, "standing calmly among"],
+    [/\bhammered forcefully\b/gi, "pressed awkwardly"],
+    [/\bfetal position\b/gi, "curled up resting"],
+    [/\bmiserable\b/gi, "tired"],
+    [/\bGhosted\b/gi, "a faded connection"],
+    [/\btortured\b/gi, "melodramatic"],
+    [/\bbrutally honest\b/gi, "direct"],
+    [/\bscared\b/gi, "uncertain"],
+    [/\bmistreatment\b/gi, "disrespect"],
+    [/\btaking out money\b/gi, "emptying a wallet symbolically"],
+  ];
+  for (const [pattern, replacement] of replacements) {
+    s = s.replace(pattern, replacement);
+  }
+
+  return s;
+}
+
+/** Still style — style as flowing prose (no section headers or ALL CAPS labels). */
 export const VIS_STILL_STYLE_PROSE = proseForImagen(
   [
-    "Flat two-dimensional modern educational webcomic panel, thick clean black outlines, solid flat vector colors, minimal smooth cel shading, chibi-lite characters about two and a half heads tall with dot eyes and simple mouths.",
-    "Draw like a cartoon illustration only — never photorealistic, never three-dimensional CGI, never sketchy pencil roughs.",
-    "Each frame shows direct human experience shifting between messy daily chaos (clutter, warm red-orange stress accents, asymmetric layout, hunched secondary figures) and sorted peace (open negative space, balanced layout, warm amber glow, upright calm posture, one organized focal object).",
-    "The recurring mentor host stays the same person every time: calm sage-green zip hoodie over brown plaid collar, khaki pants, dark shoes, light beard, pleasant or knowing expression — never panicking, sweating, tied up, or inside the chaos; he observes from outside or adjacent to the mess.",
-    "Rich environment storytelling: clear foreground, midground subject, and background world — never a soft empty gradient as the whole scene.",
-    "Artwork bleeds to all four edges of the widescreen frame with no outer comic panel border or black mat around the entire picture.",
+    "Flat two-dimensional cartoon vector webcomic style illustration, thick clean digital outlines, solid flat vector color values, soft single-layer cel-shading.",
+    "Draw as cartoon digital art only — strictly avoid 3D renders, CGI effects, fuzzy textures, sketchy pencil lines, or textured highlights.",
+    "Compositions must bleed fully to the edge of the widescreen 16:9 canvas with no panel borders, black frames, or mat borders.",
   ].join(" "),
 );
 
 export const VIS_STILL_PALETTE_PROSE = proseForImagen(
   [
-    "Deep navy and slate foundations, sage green on the mentor hoodie, neon cyan only for small clarity accents, warm amber for wins and sunset warmth, red and orange isolated to stress objects in the mess zone.",
+    "Use a professional, clean, dynamic color palette centered on high-contrast foundations, primary accent highlights, neutral character garment colors, and friction stress colors.",
   ].join(" "),
 );
 
 export const VIS_STILL_NO_TEXT_PROSE = proseForImagen(
   [
-    "The picture must contain zero readable text anywhere: no words, letters, numbers, labels, captions, watermarks, speech bubbles, signs, product names, channel names, or technical metadata painted into the artwork.",
-    "Screens, books, mugs, and signs stay blank or use simple abstract icons only.",
+    "The image must contain absolutely zero readable text: no words, letters, numbers, watermarks, tags, speech bubbles, captions, signs, or label tags inside the artwork.",
+    "Do not paint or write any characters, alphabet letters, words, quotes, numbers, symbols, labels, or captions of any kind.",
+    "Every whiteboard, paper, device screen, sign, computer monitor, tablet, or book page must be completely clean, blank, and empty of any written or drawn letters.",
+    "If any object would normally have writing on it, paint it as a pure solid color or an abstract blank form with absolutely no readable letters.",
+    "There are no letters, words, or text characters anywhere in this entire picture.",
   ].join(" "),
 );

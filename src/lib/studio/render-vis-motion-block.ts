@@ -177,6 +177,22 @@ export async function renderVisMotionBlock(params: {
   let beatsInputs: VisMotionBeatInput[] = [];
 
   if (visualBeats.length > 0) {
+    // Strict Quality Control: Verify that every visual beat has its own generated still in the database.
+    // If any beat is missing, we explicitly abort and raise an alert instead of compiling a freeze-frame.
+    for (let i = 0; i < visualBeats.length; i++) {
+      const matchedStill = blockStills.find((s) =>
+        stillMatchesBeat(s, actId, blockIndex, i, blockHasVisualBeats)
+      );
+      if (!matchedStill) {
+        return {
+          ok: false,
+          actId,
+          blockIndex,
+          error: `Strict QC Check Failed: Still for visual beat index ${i} is missing in Act '${actId}' Block ${blockIndex + 1}. Every beat must have its own compiled still before exporting.`,
+        };
+      }
+    }
+
     // We have visualBeats in the script!
 
     // Tier 2 proportional fallback values (computed up-front)

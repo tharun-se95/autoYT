@@ -10,13 +10,19 @@ import {
   pcm16leToWav,
 } from "@/lib/audio/pcm16le-to-wav";
 import { NARRATION_TTS_MAX_CHARS } from "@/lib/script-writer/narration-for-tts";
-import { VOCAL_DNA_TTS_SYSTEM_INSTRUCTION } from "@/prompts/vocal-dna";
+import "@/prompts/init";
+import {
+  DEFAULT_PROMPT_VERSIONS,
+  getPrompt,
+  getPromptWithFallback,
+} from "@/prompts/registry";
 
 export type GenerateNarrationTtsOptions = {
   /** Appended to the vocal DNA system instruction for this chunk only. */
   directorAddendum?: string;
   /** Defaults to {@link NARRATION_TTS_MAX_CHARS} (single-shot). Use block cap for per-block TTS. */
   maxInputChars?: number;
+  channelId?: string | null;
 };
 
 /**
@@ -224,14 +230,19 @@ function isRetryableTtsFailure(e: unknown): boolean {
   return /INTERNAL|500/i.test(e.message);
 }
 
+import { createServiceSupabase } from "@/lib/supabase/admin-client";
+
 /**
- * Gemini TTS: speaks `text` using Upgrade Life vocal DNA as system instruction.
+ * Gemini TTS: speaks `text` using custom vocal DNA as system instruction.
  */
 export async function generateNarrationTts(
   text: string,
   options?: GenerateNarrationTtsOptions,
 ): Promise<GenerateNarrationTtsResult> {
-  const trimmed = text.trim();
+  let trimmed = text.trim();
+  // Clean up excessive trailing periods (e.g. ....) that can cause the TTS engine to stall or block
+  trimmed = trimmed.replace(/\.{4,}/g, "...").trim();
+
   if (!trimmed) {
     return { ok: false, error: "Narration text is empty." };
   }
@@ -243,10 +254,15 @@ export async function generateNarrationTts(
     };
   }
 
+  const vocalDnaInstruction = await getPromptWithFallback(
+    "VOCAL_DNA_TTS_SYSTEM_INSTRUCTION",
+    DEFAULT_PROMPT_VERSIONS.VOCAL_DNA_TTS_SYSTEM_INSTRUCTION,
+    options?.channelId
+  );
   const systemInstructionBody =
     options?.directorAddendum?.trim()
-      ? `${VOCAL_DNA_TTS_SYSTEM_INSTRUCTION}\n\n---\nBlock direction:\n${options.directorAddendum.trim()}`
-      : VOCAL_DNA_TTS_SYSTEM_INSTRUCTION;
+      ? `${vocalDnaInstruction}\n\n---\nBlock direction:\n${options.directorAddendum.trim()}`
+      : vocalDnaInstruction;
 
   const key = process.env.GEMINI_API_KEY;
   if (!key?.trim()) {
@@ -257,8 +273,20 @@ export async function generateNarrationTts(
     };
   }
 
-  const voiceName =
-    process.env.GEMINI_TTS_VOICE?.trim() || "Charon";
+  // Load channel voice configuration if available
+  let voiceName = process.env.GEMINI_TTS_VOICE?.trim() || "Charon";
+  const supabase = createServiceSupabase();
+  if (supabase && options?.channelId) {
+    const { data: chanRow } = await supabase
+      .from("channels")
+      .select("voice_id")
+      .eq("id", options.channelId)
+      .maybeSingle();
+    if (chanRow?.voice_id) {
+      voiceName = chanRow.voice_id;
+      console.info(`[tts] Resolved preset voice: "${voiceName}" for channel: ${options.channelId}`);
+    }
+  }
 
   const ai = new GoogleGenAI({ apiKey: key });
 
@@ -269,7 +297,7 @@ export async function generateNarrationTts(
     ? `Block direction: ${options.directorAddendum.trim()}\n\n`
     : "";
   /** If the API rejects `systemInstruction`, fold a short director cue into the user turn (still one `parts` text). */
-  const userTextWithFoldedStyle = `${foldedLead}Read the following narration verbatim as a YouTube voice-over: calm, grounded, dry wit, second person, neutral international English, expressive pacing (not monotone). Keep presence through phrase endings — no heavy fade or dulling on the last words. Output only the spoken narration — do not add commentary.\n\n${trimmed}`;
+  const userTextWithFoldedStyle = `${foldedLead}Read the following narration verbatim as a YouTube voice-over. Align with these voice guidelines:\n"${vocalDnaInstruction}"\n\nOutput only the spoken narration — do not add commentary.\n\n${trimmed}`;
 
   for (const model of models) {
     for (const useSystem of [true, false]) {

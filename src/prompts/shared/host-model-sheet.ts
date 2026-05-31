@@ -1,7 +1,6 @@
 /**
- * **Single source** for the on-screen mentor identity (Gemini JSON prose + Imagen).
- * Edit here only; system and image prompts both reference this string.
+ * **Single source** for the main host character's visual lock.
+ * Edit here to ensure the AI image generator maintains visual consistency across renders.
  */
 export const HOST_MODEL_SHEET_PROSE =
-  "Friendly relatable guy early 30s, Chibi-Lite ~2.5–3 heads tall, black dot eyes and thin expressive brows, light beard stubble, clean brown hair; **sage-green zip hoodie** worn over **brown plaid shirt** with collar visibly peeking out; **khaki or soft gray pants** and **dark casual shoes**; optional **dark simple beanie**. Demeanor: calm anchor—pleasant relaxed composure or subtle knowing smirk, **never panicked**. Same proportions, anatomy, and outfit every render—one recurring Big Brother host—never a different person or wardrobe swap.";
-
+  "A calm, slightly melancholic male AI character, early 30s-coded. Minimalist aesthetic, glowing circuits visible under translucent skin on cheeks/forehead. Wears a dark, high-collared jacket (think 'future monk'). Pensive expression, always observing, never panicked. Lean, angular features. Minimalist, not realistic. Same proportions and outfits in every render, facing forward or in thoughtful profile.";

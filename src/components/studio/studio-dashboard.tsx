@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, Sliders } from "lucide-react";
 
 import { ProductionQueueCard } from "@/components/production/production-queue-card";
 import { SectionContainer } from "@/components/landing/section-container";
@@ -35,7 +35,7 @@ export function StudioDashboard() {
       <SectionContainer className="max-w-3xl">
         <div className="flex flex-col gap-3">
           <p className="text-xs font-medium tracking-[0.2em] text-primary uppercase sm:tracking-[0.24em]">
-            Upgrade Life studio
+            Creator Studio
           </p>
           <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
             Production command center
@@ -61,6 +61,13 @@ export function StudioDashboard() {
             >
               <Lightbulb className="size-4" aria-hidden />
               Brainstorm ideas
+            </Link>
+            <Link
+              href="/studio/config"
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "inline-flex gap-1.5")}
+            >
+              <Sliders className="size-4" aria-hidden />
+              Configure Prompts
             </Link>
           </div>
         </div>

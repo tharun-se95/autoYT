@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Film, Lightbulb, Search } from "lucide-react";
 
+import { listStudioIdeaBatches } from "@/app/actions/studio-ideas";
 import { ContentArchitectForm } from "@/components/studio/content-architect-form";
 import { ProductionQueueCard } from "@/components/production/production-queue-card";
 import { SectionContainer } from "@/components/landing/section-container";
@@ -25,6 +26,10 @@ import {
   CHANNEL_DESK_UPCOMING_HREF,
   CHANNEL_DESK_VIDEOS_HREF,
 } from "@/lib/nav/channel-desk";
+import type { StudioIdeaBatchListItem } from "@/lib/studio/studio-idea-batch";
+
+// NEW: Component for rendering a single idea batch
+import { IdeaBatchCard } from "@/components/studio/idea-batch-card";
 
 type HomeTab = "videos" | "upcoming";
 type SortKey = "latest" | "popular" | "oldest";
@@ -60,10 +65,17 @@ export function ChannelHub() {
   const sort = sortFromParam(searchParams.get("sort"));
   const batchSort = batchSortFromParam(searchParams.get("batches"));
   const [videos, setVideos] = useState<CommissionedVideo[]>([]);
+  const [ideaBatches, setIdeaBatches] = useState<StudioIdeaBatchListItem[]>([]); // NEW: State for idea batches
   const [hydrated, setHydrated] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [videoSearch, setVideoSearch] = useState("");
   const [upcomingSearch, setUpcomingSearch] = useState("");
+
+  // NEW: Function to refresh idea batches
+  const refreshIdeaBatches = useCallback(async () => {
+    const batches = (await listStudioIdeaBatches()) ?? [];
+    setIdeaBatches(Array.isArray(batches) ? batches : []);
+  }, []);
 
   useEffect(() => {
     return subscribeCommissionedVideos((rows) => {
@@ -79,6 +91,13 @@ export function ChannelHub() {
     });
     return () => cancelAnimationFrame(id);
   }, [tab, hydrated]);
+
+  // NEW: Effect to load idea batches when Upcoming tab is active
+  useEffect(() => {
+    if (tab === "upcoming") {
+      void refreshIdeaBatches();
+    }
+  }, [tab, refreshIdeaBatches]);
 
   const setTabAndUrl = useCallback(
     (next: HomeTab) => {
@@ -124,9 +143,11 @@ export function ChannelHub() {
     [router, searchParams]
   );
 
-  const refreshVideos = useCallback(() => {
-    setVideos(readCommissionedVideos());
-  }, []);
+  // Combined refresh for all data on the channel desk
+  const refreshAllData = useCallback(() => {
+    setVideos(readCommissionedVideos()); // Refreshes videos
+    void refreshIdeaBatches(); // Refreshes idea batches
+  }, [refreshIdeaBatches]); // Depend on refreshIdeaBatches to avoid stale closure
 
   const onCommissionIdea = useCallback(
     (payload: DeskCommissionPayload) => {
@@ -136,10 +157,10 @@ export function ChannelHub() {
         thumbnailLocalRelativePath: payload.thumbnailLocalRelativePath ?? null,
         thumbnailInlineDataUrl: null,
       });
-      refreshVideos();
+      refreshAllData(); // Use the new combined refresh
       router.push(resumeHrefForVideo(row));
     },
-    [router, refreshVideos]
+    [router, refreshAllData]
   );
 
   const sortedVideos = useMemo(() => {
@@ -173,7 +194,7 @@ export function ChannelHub() {
 
   const videoCount = videos.length;
   const channelDescription =
-    "Upgrade Life production desk — start an episode to unlock Script, Audio, then Visuals. Brainstorm ideas on Upcoming before you lock a commission.";
+    "Video production desk — start an episode to unlock Script, Audio, then Visuals. Brainstorm ideas on Upcoming before you lock a commission.";
 
   const sortChips: { id: SortKey; label: string }[] = [
     { id: "latest", label: "Latest" },
@@ -186,6 +207,22 @@ export function ChannelHub() {
     { id: "oldest", label: "Oldest" },
   ];
 
+  // NEW: Filtered idea batches for display
+  const filteredIdeaBatches = useMemo(() => {
+    const q = upcomingSearch.trim().toLowerCase();
+    if (!q) return ideaBatches;
+    return ideaBatches.filter(
+      (batch) =>
+        batch.topics.toLowerCase().includes(q) ||
+        batch.topicsPreview.toLowerCase().includes(q) ||
+        (batch.ideas ?? []).some(
+          (ideaRow) =>
+            ideaRow.idea.title.toLowerCase().includes(q) ||
+            ideaRow.idea.hook.toLowerCase().includes(q)
+        )
+    );
+  }, [ideaBatches, upcomingSearch]);
+
   return (
     <section id="channel-hub" className="scroll-mt-20 pb-10 sm:pb-14">
       <SectionContainer className="max-w-7xl">
@@ -193,7 +230,7 @@ export function ChannelHub() {
         <div className="overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1a] shadow-sm sm:rounded-2xl">
           <div className="relative flex h-[100px] items-center justify-center bg-gradient-to-br from-zinc-800 via-zinc-900 to-black sm:h-[140px] md:h-[160px]">
             <p className="font-heading text-2xl font-semibold tracking-tight text-white/95 sm:text-3xl md:text-4xl">
-              Upgrade Life
+              Creator Studio
             </p>
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -215,21 +252,21 @@ export function ChannelHub() {
                 aria-hidden
               >
                 <div className="flex size-full items-center justify-center font-heading text-xl font-bold tracking-tight text-primary-foreground sm:text-2xl">
-                  UL
+                  CS
                 </div>
               </div>
               <div className="min-w-0 pb-0.5">
                 <h1 className="font-heading text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                  Upgrade Life
+                  Creator Channel
                 </h1>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  <span className="text-foreground/90">@UpgradeLife</span>
+                  <span className="text-foreground/90">@CreatorStudio</span>
                   <span className="mx-1.5 text-white/25">·</span>
                   <span>
                     {videoCount} {videoCount === 1 ? "video" : "videos"}
                   </span>
                   <span className="mx-1.5 text-white/25">·</span>
-                  <span>Channel DNA v4</span>
+                  <span>Channel DNA v1.0</span>
                 </p>
                 <p className="mt-2 max-w-2xl text-sm leading-snug text-muted-foreground">
                   {descExpanded ? (
@@ -467,7 +504,7 @@ export function ChannelHub() {
                       key={v.id}
                       video={v}
                       variant="grid"
-                      onRemoved={refreshVideos}
+                      onRemoved={refreshAllData}
                     />
                   ))}
                 </ul>
@@ -480,7 +517,25 @@ export function ChannelHub() {
                 batchSort={batchSort}
                 ideaSearchQuery={upcomingSearch}
                 onCommissionIdea={onCommissionIdea}
+                // Removed onIdeasGenerated prop
               />
+              {filteredIdeaBatches.length === 0 ? (
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 sm:p-8 mt-6">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    No ideas yet. Enter topics above and click "Generate ideas".
+                  </p>
+                </div>
+              ) : (
+                <ul className="grid grid-cols-1 gap-x-4 gap-y-8 mt-6">
+                  {filteredIdeaBatches.map((batch) => (
+                    <IdeaBatchCard
+                      key={batch.runId}
+                      batch={batch}
+                      onCommissionIdea={onCommissionIdea}
+                    />
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </div>

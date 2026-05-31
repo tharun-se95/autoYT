@@ -1,5 +1,9 @@
 import type { ThumbnailImageSpec } from "@/lib/content-architect/types";
-import { buildThumbnailImagePrompt } from "@/lib/thumbnail/build-image-prompt";
+import "@/prompts/init";
+import {
+  DEFAULT_PROMPT_VERSIONS,
+  getPrompt,
+} from "@/prompts/registry";
 import { generateImagenSinglePng } from "@/lib/thumbnail/imagen-single-png";
 import { persistThumbnailGenerationWithLocalFile } from "@/lib/studio-db/persist-thumbnail-local";
 
@@ -43,7 +47,11 @@ export async function generateThumbnailImageCore(
     };
   }
 
-  const prompt = buildThumbnailImagePrompt(spec);
+  const prompt = getPrompt(
+    "THUMBNAIL_IMAGE_PROMPT",
+    DEFAULT_PROMPT_VERSIONS.THUMBNAIL_IMAGE_PROMPT,
+    spec,
+  );
   const gen = await generateImagenSinglePng(prompt);
   if (!gen.ok) {
     return { ok: false, error: gen.error };

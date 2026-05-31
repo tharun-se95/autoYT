@@ -73,8 +73,13 @@ export async function mergeNarrationManifestSegment(
   );
   rest.push(nextSeg);
   rest.sort((a, b) => {
-    const order = (x: ScriptActId) =>
-      ["mess", "deep_dive", "mirror", "way_forward"].indexOf(x);
+    const uniqueActIds: string[] = [];
+    for (const r of rest) {
+      if (!uniqueActIds.includes(r.actId)) {
+        uniqueActIds.push(r.actId);
+      }
+    }
+    const order = (x: ScriptActId) => uniqueActIds.indexOf(x);
     const d = order(a.actId) - order(b.actId);
     if (d !== 0) return d;
     return a.blockIndex - b.blockIndex;
@@ -194,29 +199,26 @@ export async function persistNarrationAudioBlock(params: {
   };
 }
 
-const ACT_ORDER: ScriptActId[] = [
-  "mess",
-  "deep_dive",
-  "mirror",
-  "way_forward",
-];
-
-function actOrderIndex(x: ScriptActId): number {
-  return ACT_ORDER.indexOf(x);
+function isScriptActId(s: string): s is ScriptActId {
+  return typeof s === "string" && s.trim().length > 0 && /^[a-z0-9_-]+$/i.test(s);
 }
 
 function sortSegments<T extends { actId: ScriptActId; blockIndex: number }>(
   segs: T[],
 ): T[] {
+  // Dynamically extract unique actIds in the order they appear to define act ordering
+  const uniqueActIds: string[] = [];
+  for (const r of segs) {
+    if (!uniqueActIds.includes(r.actId)) {
+      uniqueActIds.push(r.actId);
+    }
+  }
+
   return [...segs].sort((a, b) => {
-    const d = actOrderIndex(a.actId) - actOrderIndex(b.actId);
+    const d = uniqueActIds.indexOf(a.actId) - uniqueActIds.indexOf(b.actId);
     if (d !== 0) return d;
     return a.blockIndex - b.blockIndex;
   });
-}
-
-function isScriptActId(s: string): s is ScriptActId {
-  return (ACT_ORDER as readonly string[]).includes(s);
 }
 
 /** Load saved narration segments (manifest + Supabase merged; DB wins per block). */

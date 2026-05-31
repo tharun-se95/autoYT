@@ -4,7 +4,15 @@ import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { CommissionedVideo } from "@/lib/home/commissioned-videos-storage";
-import type { ContentPillar, ThumbnailTextGlow, VideoIdea } from "@/lib/content-architect/types";
+import {
+  DEFAULT_SUGGESTED_TONE,
+  DEFAULT_SUGGESTED_VISUAL_STYLE,
+  parseSuggestedTone,
+  parseSuggestedVisualStyle,
+  type ContentPillar,
+  type ThumbnailTextGlow,
+  type VideoIdea,
+} from "@/lib/content-architect/types";
 import {
   getLocalAssetsRoot,
   sanitizeEpisodeIdForAssets,
@@ -27,15 +35,17 @@ function defaultIdeaFromScript(script: ScriptDocument): VideoIdea {
   const hook =
     firstNarration.length > 0
       ? firstNarration.slice(0, 280)
-      : "A psychology and mindset episode for Upgrade Life.";
+      : "A video episode for this channel.";
   return {
     title,
     hook,
     thumbnailVisualDescription:
       "16:9 narrative explainer panel — mentor in split Daily Chaos vs Sorted Peace scene.",
-    thumbnailTextOverlay: title.split(/\s+/).slice(0, 4).join(" ").toUpperCase().slice(0, 32) || "UPGRADE LIFE",
+    thumbnailTextOverlay: title.split(/\s+/).slice(0, 4).join(" ").toUpperCase().slice(0, 32) || "CREATOR STUDIO",
     thumbnailTextGlow: "cyan",
     pillar: "overthinking",
+    suggestedTone: DEFAULT_SUGGESTED_TONE,
+    suggestedVisualStyle: DEFAULT_SUGGESTED_VISUAL_STYLE,
   };
 }
 
@@ -92,9 +102,11 @@ async function readBootstrapMeta(
       thumbnailTextOverlay:
         typeof i.thumbnailTextOverlay === "string"
           ? i.thumbnailTextOverlay
-          : "UPGRADE LIFE",
+          : "CREATOR STUDIO",
       thumbnailTextGlow: glow,
       pillar,
+      suggestedTone: parseSuggestedTone(i.suggestedTone),
+      suggestedVisualStyle: parseSuggestedVisualStyle(i.suggestedVisualStyle),
     };
     if (!videoIdea.title.trim()) return null;
     return {

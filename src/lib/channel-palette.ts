@@ -1,14 +1,7 @@
 /**
- * **Cyber-Stoic** color swatches for Upgrade Life (Human Sanctuary DNA v4.0).
- * Pairs with `channel-visual-style.ts` (Chibi-Lite anatomy, line work, lighting logic).
+ * Color swatches and palette guidelines for visual generation.
  */
 export const CYBER_STOIC_PALETTE_PROMPT = [
-  "PALETTE — Visualist / Cyber-Stoic color psychology (Human Sanctuary DNA):",
-  "- **Deep Navy / slate:** Foundation for backgrounds, night beats, and ambient shadows—calming “dark mode” for the viewer’s eye[cite: 2, 21].",
-  "- **Neon Cyan:** **Only** for breakthroughs, sharp realizations, and clear paths—glowing lines, halos, simple icons (e.g. lightbulb moment). Do not flood the frame with cyan.",
-  "- **Warm Amber / soft gold:** Wins and restoration—savings growing, thriving plant, sunset warmth, repaired connection[cite: 13, 21].",
-  "- **Sage Green:** The mentor’s **stable** zip hoodie—natural, grounded, **not** neon.",
-  "- **Friction (Chaos accents):** For daily mess (debt, price shock, text avalanches)—**sharp reds, oranges, and dark grey** in **floating word tags**, alarms, or jagged shapes **isolated to the problem zone** so they never replace the navy foundation.",
-  "- **Soft Lavender:** Optional comfort accent—e.g. sleeping purple cat—for a final touch of safety.",
-  "- **Composition:** Leave clean navy or soft-gradient negative space so ALL CAPS overlay text (when used) stays legible on phones.",
+  "PALETTE — Color psychology and color scheme guidelines:",
+  "- **Primary Foundation:** Deep space blues or dark purples for ambient shadows and backgrounds, creating a calm, dark-mode digital canvas.\n- **Accent Color 1 (Breakthrough/Glitch):** Vibrant neon green or electric pink for insights, sharp realizations, data streams, and intentional digital artifacts.\n- **Accent Color 2 (Reflection/Restoration):** Muted cool grays or subtle desaturated blues for moments of reflection, character details, and grounding elements.\n- **Character & UI Neutrals:** Stark white for overlay text (post-production) and minimalist UI elements. Cool grays for the AI character's form.\n- **Friction / Stress Zones (Sparse):** Isolated, subtle deep reds or fragmented oranges only in high-stress data-chaos zones, used with extreme restraint.",
 ].join("\n");

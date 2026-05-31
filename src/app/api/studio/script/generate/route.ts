@@ -7,10 +7,12 @@ import {
   getLocalAssetsRoot,
   sanitizeEpisodeIdForAssets,
 } from "@/lib/assets/local-asset-store";
+import { createServiceSupabase } from "@/lib/supabase/admin-client";
 
 type Body = {
   episodeBrief?: string;
   videoId?: string;
+  mode?: string;
 };
 
 export async function POST(request: Request) {
@@ -24,6 +26,7 @@ export async function POST(request: Request) {
   const episodeBrief =
     typeof body.episodeBrief === "string" ? body.episodeBrief.trim() : "";
   const videoId = typeof body.videoId === "string" ? body.videoId.trim() : "";
+  const mode = typeof body.mode === "string" ? body.mode.trim() : "long";
 
   if (!episodeBrief) {
     return NextResponse.json(
@@ -32,7 +35,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await generateScript(episodeBrief);
+  // Resolve channelId from the video if videoId is provided
+  let channelId: string | null = null;
+  const supabase = createServiceSupabase();
+  if (supabase && videoId) {
+    const { data: vidRow } = await supabase
+      .from("videos")
+      .select("channel_id")
+      .eq("id", videoId)
+      .maybeSingle();
+    if (vidRow?.channel_id) {
+      channelId = vidRow.channel_id;
+      console.info(`[api/script] Resolved channelId "${channelId}" for video "${videoId}"`);
+    }
+  }
+
+  const result = await generateScript(episodeBrief, mode as "long" | "short" | "test", channelId);
   if (!result.ok) {
     return NextResponse.json(
       { ok: false, error: result.error },

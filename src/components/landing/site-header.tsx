@@ -20,6 +20,7 @@ import { SectionContainer } from "./section-container";
 const nav = [
   { href: CHANNEL_DESK_PATH, label: "Videos" },
   { href: "/studio", label: "Production" },
+  { href: "/studio/visual-library", label: "Visual Library" },
 ] as const;
 
 function MobileNavList({ onNavigate }: { onNavigate: () => void }) {
@@ -53,7 +54,7 @@ export function SiteHeader() {
           href="/"
           className="font-heading text-sm font-semibold tracking-tight text-foreground"
         >
-          Upgrade Life
+          Creator Studio
         </Link>
 
         <nav
@@ -77,7 +78,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <GlassPanel className="hidden px-3 py-1.5 lg:block">
             <span className="text-xs text-muted-foreground">
-              Human Sanctuary · Chibi-Lite + DNA
+              Autonomous explainer comic production suite
             </span>
           </GlassPanel>
 

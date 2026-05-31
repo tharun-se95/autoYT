@@ -19,14 +19,10 @@ export function HeroSection() {
             </span>
           </div>
           <h1 className="font-heading max-w-xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl sm:leading-[1.08]">
-            Clarity when life feels loud—a calm blueprint for modern stress.
+            Bring your stories to life with autonomous video production.
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-muted-foreground">
-            Upgrade Life is a human sanctuary: binge-worthy 10–20 minute stories
-            from a chill Big Brother who blends honest warmth with practical
-            upgrades—in mind, money, habits, and relationships. On screen, the
-            look is a Chibi-Lite educational webcomic: vector-clear, Cyber-Stoic
-            palette, readable story-forward frames.
+            Creator Studio is a fully autonomous video creation platform. Generate structured 4-act scripts, synthesize professional voice-over audio, and draw dynamic, custom-bound storyboard still illustrations using advanced Imagen 3 workflows.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Link
@@ -69,12 +65,10 @@ export function HeroSection() {
                 Voice &amp; vibe
               </p>
               <p className="font-heading text-xl font-medium text-foreground">
-                The Big Brother
+                Narration Voice
               </p>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Your coolest, most reliable friend—wise, witty, laid back, and
-                honest enough to name the mess. He shares the blueprint that
-                helped him find calm when life feels loud.
+                A highly structured, custom vocal identity configured in the Prompt Studio. Speaks directly to your audience in second person with close-mic intimacy and pacing.
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground">

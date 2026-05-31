@@ -6,9 +6,9 @@ import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
 
 export const metadata: Metadata = {
-  title: "Channel desk",
+  title: "Channel Desk",
   description:
-    "Upgrade Life channel desk — videos in production, upcoming brainstorms, and thumbnails.",
+    "Creator Channel Desk — manage videos in production, brainstorm upcoming ideas, and generate assets.",
 };
 
 export default function ChannelDeskPage() {

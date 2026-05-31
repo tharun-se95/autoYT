@@ -10,10 +10,9 @@ import {
   sanitizeEpisodeIdForAssets,
   visAssemblyExportRelativePath,
 } from "@/lib/assets/local-asset-store";
-import { listAssemblyBeats } from "@/lib/studio/assembly-beats";
+import { ASSEMBLY_ACT_ORDER } from "@/lib/studio/assembly-beats";
 import { concatMp4ClipsToFile } from "@/lib/studio/ffmpeg-concat-export";
-import { loadScriptDocumentForVideo } from "@/lib/studio/load-script-document";
-import { renderVisMotionBeat } from "@/lib/studio/render-vis-motion-beat";
+import { renderVisMotionBlock } from "@/lib/studio/render-vis-motion-block";
 import { listNarrationSegmentsForVideo } from "@/lib/studio-db/persist-narration-segment";
 import { listVisStillsForVideo } from "@/lib/studio-db/persist-vis-still";
 
@@ -64,38 +63,41 @@ export async function exportAssemblyVideoForEpisode(params: {
     return { ok: false, error: "Local assets root not configured." };
   }
 
-  const [script, segments, stills] = await Promise.all([
-    loadScriptDocumentForVideo(videoId),
+  const [segments, stills] = await Promise.all([
     listNarrationSegmentsForVideo(videoId),
     listVisStillsForVideo(videoId),
   ]);
 
-  const beats = listAssemblyBeats(script, segments, stills);
-  if (beats.length === 0) {
+  if (segments.length === 0) {
     return {
       ok: false,
-      error:
-        "No beats with both a [VIS] still and narration audio. Generate visuals and audio first.",
+      error: "No narration segments found. Generate audio first.",
     };
   }
 
+  // Sort segments to ensure correct chronological video order (Mess -> Deep Dive -> Mirror -> Way Forward)
+  segments.sort((a, b) => {
+    const actCmp =
+      ASSEMBLY_ACT_ORDER.indexOf(a.actId as any) - ASSEMBLY_ACT_ORDER.indexOf(b.actId as any);
+    if (actCmp !== 0) return actCmp;
+    return a.blockIndex - b.blockIndex;
+  });
+
   const clipAbsPaths: string[] = [];
 
-  for (const beat of beats) {
-    const result = await renderVisMotionBeat({
+  for (const seg of segments) {
+    const result = await renderVisMotionBlock({
       videoId,
-      actId: beat.actId,
-      baseBlockIndex: beat.baseBlockIndex,
-      beatIndex: beat.beatIndex,
-      still: beat.still,
-      segment: beat.segment,
-      blockVisualBeats: beat.blockVisualBeats,
-      force: false,
+      actId: seg.actId as any,
+      blockIndex: seg.blockIndex,
+      stills,
+      segment: seg,
+      force,
     });
     if (!result.ok) {
       return {
         ok: false,
-        error: `${beat.actTitle} · block ${beat.baseBlockIndex + 1} beat ${beat.beatIndex + 1}: ${result.error}`,
+        error: `Act ${seg.actId} · block ${seg.blockIndex + 1}: ${result.error}`,
       };
     }
     try {
@@ -121,7 +123,7 @@ export async function exportAssemblyVideoForEpisode(params: {
     return {
       ok: true,
       videoId,
-      clipCount: beats.length,
+      clipCount: segments.length,
       cached: true,
       relativePath: exportRel,
       absolutePath: exportAbs,
@@ -146,7 +148,7 @@ export async function exportAssemblyVideoForEpisode(params: {
   return {
     ok: true,
     videoId,
-    clipCount: beats.length,
+    clipCount: segments.length,
     cached: false,
     relativePath: exportRel,
     absolutePath: exportAbs,

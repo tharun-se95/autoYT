@@ -11,6 +11,39 @@ export type ContentPillar =
 /** Hook text glow: cyan = clarity / blueprint / cool highlights; amber = warmth / gold-hour / habits / money calm. */
 export type ThumbnailTextGlow = "cyan" | "amber";
 
+// NEW: Content Tone and Visual Style Preference types
+export type ContentTone = "analytical" | "stoic" | "provocative" | "calm";
+export type VisualStylePreference = "metaphoric" | "narrative" | "typography-focused";
+
+/** Fallback when legacy rows or disk bootstrap meta omit scriptwriter hints. */
+export const DEFAULT_SUGGESTED_TONE: ContentTone = "calm";
+export const DEFAULT_SUGGESTED_VISUAL_STYLE: VisualStylePreference = "narrative";
+
+const CONTENT_TONES = new Set<ContentTone>([
+  "analytical",
+  "stoic",
+  "provocative",
+  "calm",
+]);
+const VISUAL_STYLES = new Set<VisualStylePreference>([
+  "metaphoric",
+  "narrative",
+  "typography-focused",
+]);
+
+export function parseSuggestedTone(value: unknown): ContentTone {
+  return typeof value === "string" && CONTENT_TONES.has(value as ContentTone)
+    ? (value as ContentTone)
+    : DEFAULT_SUGGESTED_TONE;
+}
+
+export function parseSuggestedVisualStyle(value: unknown): VisualStylePreference {
+  return typeof value === "string" &&
+    VISUAL_STYLES.has(value as VisualStylePreference)
+    ? (value as VisualStylePreference)
+    : DEFAULT_SUGGESTED_VISUAL_STYLE;
+}
+
 export type VideoIdea = {
   /** Plain-language title: curiosity + SEO (topic up front), still inclusive for any age. */
   title: string;
@@ -28,6 +61,10 @@ export type VideoIdea = {
   thumbnailTextGlow: ThumbnailTextGlow;
   /** Which foundation this idea primarily serves. */
   pillar: ContentPillar;
+  // NEW: Suggested content tone for the Script Writer
+  suggestedTone: ContentTone;
+  // NEW: Suggested visual style for the Script Writer
+  suggestedVisualStyle: VisualStylePreference;
 };
 
 /** Payload for Imagen (built from structured thumbnail fields). */

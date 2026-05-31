@@ -5,7 +5,7 @@ import type { ScriptActId } from "@/lib/script-writer/types";
 /**
  * Ken Burns motion presets — subtle zoom only.
  * Pan presets removed: they caused visible edge-clipping on tightly-framed stills.
- * Max zoom capped at 1.08 (8%) — imperceptible crop, smooth cinematic drift.
+ * Capped at 1.03 (3%) — extremely subtle, high-end cinematic drift.
  */
 export type KenBurnsPreset =
   | "zoom_in"
@@ -16,27 +16,20 @@ const PRESET_CYCLE: readonly KenBurnsPreset[] = [
   "zoom_out",
 ];
 
-const ACT_ORDER: readonly ScriptActId[] = [
-  "mess",
-  "deep_dive",
-  "mirror",
-  "way_forward",
-];
-
 export function kenBurnsPresetForBeatIndex(index: number): KenBurnsPreset {
-  const i =
-    ((index % PRESET_CYCLE.length) + PRESET_CYCLE.length) % PRESET_CYCLE.length;
+  const i = ((index % PRESET_CYCLE.length) + PRESET_CYCLE.length) % PRESET_CYCLE.length;
   return PRESET_CYCLE[i]!;
 }
 
-/**
- * One clip per narration block: alternate zoom_in / zoom_out so adjacent beats contrast.
- */
 export function kenBurnsPresetForStudioBlock(
   actId: ScriptActId,
   blockIndex: number,
 ): KenBurnsPreset {
-  const actI = Math.max(0, ACT_ORDER.indexOf(actId));
+  // Simple deterministic hash of actId string to replace rigid index
+  let actI = 0;
+  for (let j = 0; j < actId.length; j++) {
+    actI = (actI * 31 + actId.charCodeAt(j)) % 1000;
+  }
   const flat = actI * 512 + blockIndex;
   return kenBurnsPresetForBeatIndex(flat);
 }
@@ -46,13 +39,8 @@ function clamp(n: number, lo: number, hi: number): number {
 }
 
 /**
- * Subtle zoompan filter — max zoom 1.08 (8%), step 0.0005/frame.
- * `scale=iw*2` oversample prevents pixelation at the zoomed edge.
- * Always centred: x/y anchored at `iw/2-(iw/zoom/2)`.
- *
- * At 24fps for a 4-second beat (96 frames):
- *   zoom_in:  1.000 → 1.048  (barely visible drift inward)
- *   zoom_out: 1.080 → 1.032  (barely visible drift outward)
+ * Subtle zoompan filter — max zoom 1.03 (3%), smooth linear interpolation.
+ * scale=3840:2160 provides sub-pixel accuracy to completely prevent coordinates jitter.
  */
 export function buildKenBurnsZoomPanFilter(
   preset: KenBurnsPreset,
@@ -66,19 +54,23 @@ export function buildKenBurnsZoomPanFilter(
   const H = Math.max(320, Math.round(height));
   const F = Math.max(12, Math.round(fps));
 
-  const tail = `d=${FN}:s=${W}x${H}:fps=${F}`;
-  // Centre anchor — same for both presets, no panning
-  const centre = `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`;
+  // Supersample the input still to a high-resolution 4K canvas (3840x2160) to provide sub-pixel precision
+  const SS_W = 3840;
+  const SS_H = 2160;
 
-  switch (preset) {
-    case "zoom_out":
-      // Start at 1.08, drift slowly back toward 1.0 — never below 1.0
-      return `scale=iw*2:ih*2:flags=lanczos,zoompan=z='if(eq(on,1),1.08,max(zoom-0.0005,1))':${centre}:${tail}`;
-    case "zoom_in":
-    default:
-      // Start at 1.0, drift slowly up to 1.08 — never above 1.08
-      return `scale=iw*2:ih*2:flags=lanczos,zoompan=z='if(eq(on,1),1,min(zoom+0.0005,1.08))':${centre}:${tail}`;
+  const tail = `d=${FN}:s=${SS_W}x${SS_H}:fps=${F}`;
+  // Center coordinates on the 4K supersampled canvas
+  const centre = `x='(iw-ow)/2':y='(ih-oh)/2'`;
+
+  let zExpression = "";
+  if (preset === "zoom_out") {
+    zExpression = `1.03-0.03*on/${FN}`;
+  } else {
+    zExpression = `1.0+0.03*on/${FN}`;
   }
+
+  // High-resolution zoompan, then downscale back to target (W x H) to average out sub-pixel jitter
+  return `scale=${SS_W}:${SS_H}:flags=lanczos,zoompan=z='${zExpression}':${centre}:${tail},scale=${W}:${H}:flags=lanczos`;
 }
 
 /** Duration → frame count for one block clip (ceil so mux is not shorter than VO). */

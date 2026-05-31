@@ -1,4 +1,8 @@
-import type { VideoIdea } from "@/lib/content-architect/types";
+import {
+  parseSuggestedTone,
+  parseSuggestedVisualStyle,
+  type VideoIdea,
+} from "@/lib/content-architect/types";
 
 /** localStorage key for the in-browser production queue (Videos tab + studio). */
 export const COMMISSIONED_VIDEOS_STORAGE_KEY = "upgrade-life:commissioned-videos";
@@ -41,9 +45,9 @@ export type DeskCommissionPayload = {
   thumbnailLocalRelativePath?: string | null;
 };
 
-function isVideoIdea(x: unknown): x is VideoIdea {
-  if (!x || typeof x !== "object") return false;
-  const o = x as Record<string, unknown>;
+function normalizeVideoIdea(raw: unknown): VideoIdea | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
   const pillars = new Set([
     "overthinking",
     "emotional_armor",
@@ -51,15 +55,27 @@ function isVideoIdea(x: unknown): x is VideoIdea {
     "social_dynamics",
     "habit_architecture",
   ]);
-  return (
-    typeof o.title === "string" &&
-    typeof o.hook === "string" &&
-    typeof o.thumbnailVisualDescription === "string" &&
-    typeof o.thumbnailTextOverlay === "string" &&
-    (o.thumbnailTextGlow === "cyan" || o.thumbnailTextGlow === "amber") &&
-    typeof o.pillar === "string" &&
-    pillars.has(o.pillar)
-  );
+  if (
+    typeof o.title !== "string" ||
+    typeof o.hook !== "string" ||
+    typeof o.thumbnailVisualDescription !== "string" ||
+    typeof o.thumbnailTextOverlay !== "string" ||
+    (o.thumbnailTextGlow !== "cyan" && o.thumbnailTextGlow !== "amber") ||
+    typeof o.pillar !== "string" ||
+    !pillars.has(o.pillar)
+  ) {
+    return null;
+  }
+  return {
+    title: o.title,
+    hook: o.hook,
+    thumbnailVisualDescription: o.thumbnailVisualDescription,
+    thumbnailTextOverlay: o.thumbnailTextOverlay,
+    thumbnailTextGlow: o.thumbnailTextGlow,
+    pillar: o.pillar as VideoIdea["pillar"],
+    suggestedTone: parseSuggestedTone(o.suggestedTone),
+    suggestedVisualStyle: parseSuggestedVisualStyle(o.suggestedVisualStyle),
+  };
 }
 
 function isOptionalNullableString(x: unknown): boolean {
@@ -85,7 +101,8 @@ function isCommissionedVideo(x: unknown): x is CommissionedVideo {
   if (stage !== "script" && stage !== "audio" && stage !== "visuals") {
     return false;
   }
-  if (!isVideoIdea(o.idea)) return false;
+  const idea = normalizeVideoIdea(o.idea);
+  if (!idea) return false;
   if (!isOptionalIso(o.scriptCompletedAt) || !isOptionalIso(o.audioCompletedAt)) {
     return false;
   }
@@ -97,8 +114,10 @@ function isCommissionedVideo(x: unknown): x is CommissionedVideo {
 }
 
 function normalizeRow(raw: CommissionedVideo): CommissionedVideo {
+  const idea = normalizeVideoIdea(raw.idea) ?? raw.idea;
   return {
     ...raw,
+    idea,
     scriptCompletedAt: raw.scriptCompletedAt ?? null,
     audioCompletedAt: raw.audioCompletedAt ?? null,
     sourceGeneratedIdeaId: raw.sourceGeneratedIdeaId ?? null,

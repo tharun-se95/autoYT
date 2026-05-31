@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade Life — Visual Style Library</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #09090b;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09090b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+    </style>
+</head>
+<body class="text-zinc-100 min-h-screen">
+
+    <!-- Header Banner -->
+    <header class="border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-amber-400 to-rose-500 bg-clip-text text-transparent">UPGRADE LIFE</span>
+                <span class="text-zinc-600">/</span>
+                <span class="text-sm font-semibold tracking-wider text-zinc-400 uppercase">Production Visual Library</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">16 Production Presets</span>
+                <span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">Imagen 3 & Supabase Optimized</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-10">
+        <div class="flex flex-col gap-2 mb-10">
+            <h1 class="text-4xl font-extrabold tracking-tight">The Ultimate Visual Library</h1>
+            <p class="text-zinc-400 text-lg max-w-3xl">Programmatically optimized visual prompts and color palettes for your multi-channel faceless YouTube pipeline. Click copy on any preset to inject directly into your database.</p>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="flex flex-wrap gap-2 mb-8 border-b border-zinc-800 pb-5" id="filter-tabs">
+            <button onclick="filterStyles('all')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-zinc-800 text-white transition-all">All Styles</button>
+            <button onclick="filterStyles('explainers')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white transition-all">Flat Vector & Explainers</button>
+            <button onclick="filterStyles('artistic')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white transition-all">Artistic & Hand-drawn</button>
+            <button onclick="filterStyles('vintage')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white transition-all">Vintage & Archival</button>
+            <button onclick="filterStyles('tactile')" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white transition-all">Kinetic & Tactile</button>
+        </div>
+
+        <!-- Library Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="library-grid">
+            <!-- Styles will be dynamically rendered here -->
+        </div>
+    </main>
+
+    <!-- Modal for SQL Injection -->
+    <div id="sql-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden" onclick="closeSqlModal()">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-2xl p-6 relative max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-4 mb-4">
+                <h3 class="font-bold text-lg" id="modal-title">SQL Database Insert Script</h3>
+                <button class="text-zinc-400 hover:text-white" onclick="closeSqlModal()">✕</button>
+            </div>
+            <div class="flex-1 overflow-y-auto mb-4">
+                <pre class="bg-zinc-950 p-4 rounded-lg border border-zinc-800 text-xs font-mono overflow-x-auto text-emerald-400 whitespace-pre-wrap" id="modal-code"></pre>
+            </div>
+            <div class="flex items-center justify-between border-t border-zinc-800 pt-4">
+                <p class="text-xs text-zinc-500">Insert this SQL inside your Supabase SQL editor to seed your channel prompts.</p>
+                <button class="bg-amber-500 text-zinc-950 px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-400 transition-all" onclick="copyModalCode()">Copy SQL Script</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script holding Library Data and Logic -->
+    <script>
+        const styles = [
+            {
+                id: "style_kurzgesagt",
+                name: "The Kurzgesagt Flat-Vector",
+                category: "explainers",
+                niche: "Popular Science, Physics, Futurism, Biology",
+                channel: "Kurzgesagt – In a Nutshell",
+                colors: ["#090d16", "#e2e8f0", "#38bdf8", "#f97316", "#701a75"],
+                colorNames: ["Cosmic Void", "Stellar Ivory", "Nebula Cyan", "Solar Orange", "Atmospheric Violet"],
+                keywords: ["70s cosmic explainer", "perfect geometric shapes", "thick solid colored vector", "flat silhouette characters", "zero outlines"],
+                styleProse: "Flat 2D minimalist vector graphic illustration in a clean, cosmic-explainer style. Perfectly geometric shapes, thick solid colored vector fills, smooth clean lines, and zero outlines. Characters must have simple black dot-eyes, clean limbs, and flat silhouettes. Highly vibrant, stylized compositions with absolute flat layering.",
+                paletteProse: "Use a high-intensity cosmic neon-pastel palette of vibrant teal (#38bdf8), solar orange (#f97316), electric violet (#701a75), and deep cosmic void blue (#090d16) for backdrops. Completely flat shading with occasional soft vector gradients.",
+                noTextProse: "STRICTLY BAN ALL WRITTEN TEXT, letters, labels, names, words, signs, numbers, or UI buttons from appearing anywhere in the image. If there are blackboards, computer screens, signs, or devices, depict only abstract neon lines, abstract glitch patterns, or symbolic drawings. NEVER render English text characters."
+            },
+            {
+                id: "style_caspian",
+                name: "The Caspian Isometric Blueprint",
+                category: "explainers",
+                niche: "Geopolitics, Finance, Economics, Corporate History",
+                channel: "CaspianReport, The Infographics Show",
+                colors: ["#0f172a", "#f8fafc", "#10b981", "#fbbf24", "#ef4444"],
+                colorNames: ["Deep Slate Blue", "Crisp White", "Emerald Green", "Warning Gold", "Friction Red"],
+                keywords: ["isometric blueprint grid", "crisp outlines", "data-dense micro assets", "schematic flow diagrams"],
+                styleProse: "A clean flat vector isometric illustration drawn on a subtle geometric grid backdrop. Crisp outlines, detailed micro-isometric assets (buildings, vehicles, server racks, graphs), and structured multi-layered compositions showing clean structural flow or schematic pathways.",
+                paletteProse: "Use a premium financial-analyst palette of deep slate blue background (#0f172a), crisp warm white (#f8fafc), bright emerald green (#10b981), and warning amber gold (#fbbf24) accents.",
+                noTextProse: "The image must contain absolutely zero readable text: no words, letters, numbers, watermarks, tags, speech bubbles, captions, signs, or label tags inside the artwork. Every whiteboard, paper, device screen, sign, computer monitor, tablet, or book page must be completely clean, blank, and empty of any written or drawn letters. If any object would normally have writing on it, paint it as a pure solid color or an abstract blank form with absolutely no readable letters."
+            },
+            {
+                id: "style_polyphonic",
+                name: "The Polyphonic Silhouette Collage",
+                category: "explainers",
+                niche: "Music Essays, Cinematic Reviews, Literature, Art History",
+                channel: "Polyphonic, Vox (Cultural Essays)",
+                colors: ["#18181b", "#fafafa", "#dc2626", "#eab308", "#1e3a8a"],
+                colorNames: ["Deep Charcoal", "Textured Cream", "Crimson Red", "Mustard Yellow", "Midnight Indigo"],
+                keywords: ["high-contrast silhouette", "paper-cut layering", "bold organic shapes", "visual symbolism", "retro-modern layout"],
+                styleProse: "A high-contrast minimalist 2D silhouette collage. Bold organic shapes, dramatic paper-cut layers, and symbolic graphic designs. Characters are shown as elegant dark silhouettes against bright, textured, abstract backgrounds. High visual symbolism.",
+                paletteProse: "High contrast retro-modern palette of deep charcoal black silhouettes (#18181b), textured sepia, aged cream (#fafafa), and a single striking focal accent like crimson red (#dc2626) or mustard yellow (#eab308).",
+                noTextProse: "Strictly avoid any readable alphanumeric text, names, labels, letters, symbols, words, or speech bubbles. All textures and background elements are purely artistic abstract shapes with zero legible print."
+            },
+            {
+                id: "style_cyber_glow",
+                name: "The Cyber-Glow Neon Vector",
+                category: "explainers",
+                niche: "Futuristic Tech, Programming, Hacking Essays, Sci-Fi",
+                channel: "ColdFusion, TechQuickie",
+                colors: ["#000000", "#ffffff", "#06b6d4", "#ec4899", "#8b5cf6"],
+                colorNames: ["Pitch Black", "Prism White", "Cyber Cyan", "Neon Pink", "Laser Violet"],
+                keywords: ["luminescent vector lines", "cyberpunk electronics", "wireframe grids", "volumetric laser glow", "high retention"],
+                styleProse: "Futuristic 2D cybernetic vector illustration with glowing wireframe outlines and luminescent laser lines. Complex PCB electronic layouts, glowing microchip connections, and holographic HUD graphics layered on top of deep-space backdrops.",
+                paletteProse: "Electric high-intensity cyberpunk palette of pure pitch black (#000000), glowing laser cyan (#06b6d4), vibrant neon hot pink (#ec4899), and electric violet outlines. High self-luminescence values.",
+                noTextProse: "Strictly ban all English characters, words, interface buttons, code, and text labels. Replace all screens, computer consoles, or digital interfaces with pure blank glowing neon shapes, abstract glowing scanlines, or concentric light circles."
+            },
+            {
+                id: "style_moebius",
+                name: "The Moebius 70s Retro Ink",
+                category: "artistic",
+                niche: "Space Sci-Fi, Anomalies, Lost Civilisations, Mythologies",
+                channel: "The Cosmic Archive",
+                colors: ["#1e1b4b", "#f1f5f9", "#38bdf8", "#fb7185", "#ca8a04"],
+                colorNames: ["Nebula Shadow", "Dusty Slate", "Retro Cyan", "Faded Rose", "Aged Ochre"],
+                keywords: ["fine ink cross-hatching", "analog paper washes", "granular stippling", "grand scale space", "Jean Giraud style"],
+                styleProse: "Vintage 1970s analog sci-fi comic book illustration in the hand-drawn style of Moebius (Jean Giraud). Fine black ink cross-hatching, granular space-dust stippling, and flat desaturated color washes. Grand, surreal alien landscapes with massive ancient ruins and tiny explorers.",
+                paletteProse: "Aged, faded analog palette of muted ochre (#ca8a04), dusty rose (#fb7185), sage green, and soft lavender. Heavy ink shadows with granular film-grain texture and off-white paper washes (#f1f5f9).",
+                noTextProse: "Do not render any text, characters, words, letters, signatures, speech bubbles, or captions. Keep the artwork entirely clean, representing pure retro speculative sci-fi illustrations."
+            },
+            {
+                id: "style_dark_academia",
+                name: "The Dark Academia Chiaroscuro",
+                category: "artistic",
+                niche: "Philosophy, Dark Psychology, Literary Analysis",
+                channel: "Existential Whispers, Pursuit of Wonder",
+                colors: ["#1c1917", "#f5f5f4", "#b45309", "#15803d", "#7c2d12"],
+                colorNames: ["Stone Shadow", "Warm Ivory", "Candlelight Amber", "Forest Mahogany", "Terracotta Clay"],
+                keywords: ["chiaroscuro oil paint", "heavy impasto brush", "candlelight volumetric glow", "melancholic scenery", "organic dark academia"],
+                styleProse: "A rich Chiaroscuro oil painting with expressive brushstrokes and thick impasto textures. Deep classical contrast, soft volumetric candle-light, and dark shadows. Romantic, melancholic scenery (dimly lit libraries, old clocks, autumn windows).",
+                paletteProse: "Rich academic palette of mahogany brown, deep forest green (#15803d), dark stone charcoal (#1c1917), amber candlelight glow (#b45309), and soft book-page warm ivory (#f5f5f4).",
+                noTextProse: "Every single book page, canvas, scroll, or stone wall must be completely blank, carrying zero letters, words, writing, or signatures. All background books are depicted as plain colored leather blocks with no titles."
+            },
+            {
+                id: "style_ghibli",
+                name: "The Ghibli Watercolor Wash",
+                category: "artistic",
+                niche: "Mythologies, Cozy Storytelling, Childhood Fables, Gentle Psychology",
+                channel: "The School of Life, Cozy Tales",
+                colors: ["#fef08a", "#ffffff", "#4ade80", "#60a5fa", "#f87171"],
+                colorNames: ["Meadow Dandelion", "Cloud White", "Sage Green", "Cozy Blue Sky", "Soft Tomato Red"],
+                keywords: ["nostalgic watercolor wash", "cozy hand-painted backdrops", "Ghibli-inspired lighting", "lively nature elements", "soft charcoal outlines"],
+                styleProse: "Cozy, nostalgic hand-painted watercolor illustration in the artistic style of Studio Ghibli. Soft, fluid watercolor washes, gentle bleeding edges, light charcoal pencil outlines, and lush natural greenery. Volumetric sunlight filtering through tree leaves (komorebi), casting soft dappled shadows.",
+                paletteProse: "Cheerful, warm pastel-nature color palette of soft dandelion yellow (#fef08a), meadow sage green (#4ade80), warm sky blue (#60a5fa), and soft tomato red accents, washed over vintage white canvas.",
+                noTextProse: "Strictly exclude all forms of text, lettering, numbers, signs, and labels. Devices, books, or posters are painted as simple abstract organic blocks with no symbols or alphabet."
+            },
+            {
+                id: "style_retro_cartoon",
+                name: "The Mid-Century Warm Cartoon",
+                category: "artistic",
+                niche: "Satire, Internet Commentary, Weird Tech Trends, modern society",
+                channel: "Uncanny Valley",
+                colors: ["#2b1509", "#fffbeb", "#fb7185", "#f59e0b", "#34d399"],
+                colorNames: ["Espresso Brown", "Butter-Cream", "Rose-Coral", "Sunny Amber Gold", "Sage Teal"],
+                keywords: ["warm mid-century cartoon", "flat vector shapes", "lively pop-art", "deep cocoa outlines", "cheerful and nice aesthetics"],
+                styleProse: "Warm and cheerful flat vector illustrations in a lively mid-century modern cartoon style. Bright, sunny, and easy-going visual aesthetics, crisp clean vector lines, soft organic shapes, and a cozy warm ambiance. Strictly avoid deep shadows, cyberpunk neon glow, dark tech grids, or gritty textures. Every frame should feel warm, nice, and inviting.",
+                paletteProse: "Use a bright, cozy pastel-pop color palette centered on soft butter-cream (#fffbeb), crisp warm white, cheerful rose-coral (#fb7185), sunny amber gold (#f59e0b), and light sage teal (#34d399). Shadows are soft warm tan or light beige, never black or purple.",
+                noTextProse: "STRICTLY BAN ALL WRITTEN TEXT, letters, labels, names, words, signs, numbers, or UI buttons from appearing anywhere in the image. If there are blackboards, computer screens, signs, or devices, depict only abstract neon lines, abstract glitch patterns, or symbolic drawings. NEVER render English text characters."
+            },
+            {
+                id: "style_lemmino",
+                name: "The Lemmino Moody Cinematic Noir",
+                category: "vintage",
+                niche: "True Crime, Unsolved Mysteries, Geopolitics, Investigations",
+                channel: "Lemmino, MagnatesMedia",
+                colors: ["#020617", "#f8fafc", "#e2e8f0", "#e11d48", "#b45309"],
+                colorNames: ["Tech Charcoal", "Pristine White", "Investigation Blue", "Crimson Clue", "Archival Amber"],
+                keywords: ["cinematic moody photo", "volumetric key light", "smoky noir haze", "high-end dark mystery", "chiaroscuro shadows"],
+                styleProse: "A moody, high-end cinematic photograph with deep shadows and sharp, highly dramatic volumetric lighting. Extreme detail, smoky noir atmospheric haze, and Chiaroscuro composition. Objects appear as premium historical artifacts or dark mystery files.",
+                paletteProse: "Ultra-premium dark palette of pitch black (#020617), slate gray, and steel blue with sharp glowing amber-gold (#b45309) or crimson-red (#e11d48) volumetric key lighting.",
+                noTextProse: "Do not paint or include any readable letters, file labels, documents titles, dates, or signs. Keep all paper surfaces, folders, blackboards, or screens completely empty of writing, utilizing only blurred graphic textures or pure shadows."
+            },
+            {
+                id: "style_sepia_history",
+                name: "The Archival Sepia Collage",
+                category: "vintage",
+                niche: "War History, Ancient Empires, Documentary Narratives",
+                channel: "Kings and Generals, OverSimplified",
+                colors: ["#1c1917", "#d6d3d1", "#78350f", "#44403c", "#1e3a8a"],
+                colorNames: ["Parchment Slate", "Sepia Tan", "Oxidized Copper", "Charcoal Dust", "Imperial Navy"],
+                keywords: ["historical scrapbook", "daguerreotype cutout", "worn paper margins", "aged tea stains", "parchment texture"],
+                styleProse: "An archival historical mixed-media collage. Old daguerreotype photo cutouts, aged tea-stained maps, vintage newspaper borders, and charcoal sketches layered on top of each other. Rich paper textures, coffee stains, and realistic worn-paper edges.",
+                paletteProse: "Muted historical palette of sepia (#d6d3d1), dark charcoal (#1c1917), aged cream, parchment tan, and washed-out oxidized teal or copper accents (#78350f).",
+                noTextProse: "Strictly omit all readable dates, numbers, map labels, or newspaper headlines. All text blocks are rendered as blurred parallel ink lines, abstract cursive squiggles, or worn, unreadable ink stains."
+            },
+            {
+                id: "style_whiteboard",
+                name: "The RSA Animate Whiteboard Marker",
+                category: "explainers",
+                niche: "Book Summaries, Business Models, Highly-detailed Tutorials",
+                channel: "RSA Animate, Productivity Game, ASAPScience",
+                colors: ["#ffffff", "#000000", "#ef4444", "#3b82f6", "#10b981"],
+                colorNames: ["Pure Board White", "Dry-Erase Black", "Marker Crimson", "Marker Royal Blue", "Marker Emerald"],
+                keywords: ["high-contrast marker drawing", "dry-erase white board", "hand-sketched cartoon outlines", "diagrammatic layout"],
+                styleProse: "High-contrast whiteboard marker animation style illustration. Pure, crisp white whiteboard background, bold hand-sketched black marker outlines, and minimal colored marker fills. Characters are playful, cartoonish, expressive line-art figures interacting with diagrammatic icons, gears, and conceptual doodles.",
+                paletteProse: "Stark, high-contrast palette of solid whiteboard white (#ffffff), dry-erase marker black (#000000), and singular marker highlights of crimson red (#ef4444), royal blue (#3b82f6), or green, utilizing clean felt-tip textures.",
+                noTextProse: "Do not write any actual text, words, labels, or letters on the whiteboard or inside speech bubbles. Represent all notes, equations, and details as abstract squiggly lines, symbolic charts, geometric equations, or visual doodles."
+            },
+            {
+                id: "style_pixel_art",
+                name: "The 16-Bit Retro Lofi Pixel",
+                category: "artistic",
+                niche: "Lofi Beats, Retro Tech, Nostalgic History, Sci-Fi Musings",
+                channel: "Lofi Girl, Retro Game Mechanics Explained",
+                colors: ["#110c1f", "#e2e8f0", "#a855f7", "#ec4899", "#3b82f6"],
+                colorNames: ["Arcade Deep Blue", "Pixel Silver", "Neon Amethyst", "Cyber Rose", "Console Blue"],
+                keywords: ["16-bit pixel art", "clean dithered gradients", "retro arcade color", "lofi warm glowing window", "retro console aesthetic"],
+                styleProse: "Nostalgic 16-bit retro pixel art illustration with clean grid outlines and dithered color gradients. Rich indoor/outdoor lofi scenes (cozy bedrooms with glowing CRT monitors, rainy window sills, cyber-streets). High texture detail utilizing small, clean colored square pixels.",
+                paletteProse: "Warm, atmospheric retro-arcade palette of deep indigo backgrounds (#110c1f), glowing amethyst violet (#a855f7), neon pink highlights (#ec4899), console blue, and silver-grey pixel shading (#e2e8f0).",
+                noTextProse: "All CRT screens, console menus, or posters are filled with blank pixel blocks or abstract colored pixel shapes with absolutely zero legible letters or English characters."
+            },
+            {
+                id: "style_sticker",
+                name: "The Floating Sticker Pop-Art",
+                category: "tactile",
+                niche: "Life Hacks, Comedy, Trivia Shorts, Viral Explainer Shorts",
+                channel: "Bright Side, HowToBasic",
+                colors: ["#fafaf9", "#1c1917", "#f43f5e", "#fbbf24", "#2dd4bf"],
+                colorNames: ["Warm Parchment", "Sticker Border Black", "Watermelon Rose", "Sunny Honey", "Soft Turquoise"],
+                keywords: ["die-cut sticker outlines", "drop shadows", "floating paper pop-art", "high retention shorts", "clean modern cartoon"],
+                styleProse: "A playful flat 2D sticker-art collage. Richly detailed cartoon objects and characters rendered as thick die-cut stickers with a clean, solid white outer border. The stickers float dynamically on a warm solid-color pastel background, casting subtle, realistic drop-shadows.",
+                paletteProse: "Bright, cheerful pastel-pop palette of soft cream background (#fafaf9), sunny yellow (#fbbf24), sweet pink (#f43f5e), and soft turquoise (#2dd4bf) stickers.",
+                noTextProse: "Ensure no text, lettering, or alphabet characters appear inside the stickers or on the background. Logos on stickers are converted into abstract vector patterns or shapes."
+            },
+            {
+                id: "style_claymation",
+                name: "The Matte Claymation 3D",
+                category: "tactile",
+                niche: "Productivity Apps, High-End Tech, Developer Server Systems",
+                channel: "Polyverse, Tech Explainer 3D",
+                colors: ["#fdfbf7", "#44403c", "#f0abfc", "#67e8f9", "#86efac"],
+                colorNames: ["Matte Clay Cream", "Pinch Shadow", "Plasticine Lavender", "Cozy Matte Cyan", "Clay Mint Green"],
+                keywords: ["matte claymation 3D", "rounded low-poly", "realistic soft studio light", "satisfying tactile clay", "depth-of-field blur"],
+                styleProse: "A gorgeous, highly tactile 3D isometric illustration in a smooth claymation style. Low-poly, rounded plasticine clay assets, soft matte clay textures, and warm studio lighting with realistic soft depth-of-field blur. Looks like a physically handcrafted clay model.",
+                paletteProse: "Cozy matte pastel palette of peach, soft mint (#86efac), lavender (#f0abfc), warm cream (#fdfbf7), and sky blue clay layers with smooth, realistic shadows.",
+                noTextProse: "Ensure the model has absolutely no text, words, letters, labels, or UI buttons. Replace all keyboard key legends, screen details, or device interfaces with plain blank clay slabs of solid colors."
+            },
+            {
+                id: "style_papercut",
+                name: "The Papercut Stop-Motion",
+                category: "tactile",
+                niche: "Empathetic Stories, Culture, Organic History, TED-Ed Style",
+                channel: "TED-Ed, Kurzgesagt (Paper Edition)",
+                colors: ["#fffbeb", "#2a1508", "#f472b6", "#38bdf8", "#4ade80"],
+                colorNames: ["Parchment Base", "Cut-Shadow Brown", "Paper Blossom Pink", "Paper Sky Blue", "Forest Green Card"],
+                keywords: ["layered papercut textures", "stop-motion drop shadows", "organic raw paper edges", "tactile dimensional layout"],
+                styleProse: "A highly tactile, dimensional papercut illustration. Multiple layers of physically textured cardstock and construction paper cutouts, stacked to create high depth. Features raw, fibrous paper edges, realistic drop shadows between paper layers, and a charming stop-motion layout aesthetic.",
+                paletteProse: "Warm, rich organic palette of soft parchment cream (#fffbeb), wood-grain brown (#2a1508), soft blossom pink (#f472b6), and forest green cardstock layers. Soft ambient studio light casting distinct shadows.",
+                noTextProse: "All paper pieces are cleanly cut and completely blank. No text, words, lettering, signatures, or printed characters of any kind may exist anywhere on the paper layers."
+            },
+            {
+                id: "style_film_noir",
+                name: "The Vintage Cellulose Film",
+                category: "vintage",
+                niche: "True Crime, Archival Documentaries, Old Hollywood Stories",
+                channel: "The Vintage Files, Hollywood Graveyard",
+                colors: ["#0a0a0a", "#f5f5f5", "#a3a3a3", "#525252", "#78716c"],
+                colorNames: ["Celluloid Black", "Silver Halide White", "Vintage Neutral Gray", "Granular Charcoal", "Oxidized Sepia Tint"],
+                keywords: ["vintage cellulose film", "silver halide contrast", "heavy dust scratches", "1930s cinematic look", "faded analog film texture"],
+                styleProse: "Vintage 1930s cinematic cellulose film photograph. Striking silver halide black-and-white contrast, heavy analog film-grain texture, organic dust scratches, and light leaks. Moody, dramatic old Hollywood chiaroscuro lighting casting high-contrast shadows.",
+                paletteProse: "Rich monochromatic silver-halide palette ranging from dense celluloid black (#0a0a0a) to bright silver-white (#f5f5f5) and midtone stone grays (#a3a3a3), with a very subtle, warm archival sepia tint (#78716c).",
+                noTextProse: "Strictly exclude all readable print, document headings, numbers, and dates. All newspaper pages, text slides, and signs are blurry, illegible, or obscured by heavy film scratches and shadow overlays."
+            }
+        ];
+
+        function renderLibrary(filter = 'all') {
+            const grid = document.getElementById('library-grid');
+            grid.innerHTML = '';
+
+            const filteredStyles = filter === 'all' 
+                ? styles 
+                : styles.filter(s => s.category === filter);
+
+            filteredStyles.forEach(s => {
+                const colorsHTML = s.colors.map((c, idx) => `
+                    <div class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5">
+                        <span class="w-4 h-4 rounded-full border border-white/10" style="background-color: ${c}"></span>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-zinc-500 font-mono">${c}</span>
+                            <span class="text-[9px] text-zinc-400 font-semibold leading-none">${s.colorNames[idx]}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                const keywordsHTML = s.keywords.map(k => `
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-medium">#${k}</span>
+                `).join(' ');
+
+                const card = document.createElement('div');
+                card.className = "bg-zinc-950 border border-zinc-800 rounded-xl p-6 flex flex-col gap-6 hover:border-zinc-700 transition-all shadow-lg";
+                card.innerHTML = `
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold tracking-tight text-white">${s.name}</h2>
+                            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">${s.category}</span>
+                        </div>
+                        <p class="text-xs text-zinc-400"><strong class="text-zinc-300">Niches:</strong> ${s.niche}</p>
+                        <p class="text-xs text-zinc-400"><strong class="text-zinc-300">Reference:</strong> <span class="italic text-amber-400/90">${s.channel}</span></p>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500">Color Palette</span>
+                        <div class="grid grid-cols-5 gap-2">${colorsHTML}</div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1">${keywordsHTML}</div>
+
+                    <div class="flex flex-col gap-4 border-t border-zinc-900 pt-4">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-zinc-400">IMAGEN STYLE PROSE</span>
+                                <button onclick="copyText('${s.id}_style', this)" class="text-[10px] text-amber-400 hover:text-white font-medium flex items-center gap-1">Copy</button>
+                            </div>
+                            <p id="${s.id}_style" class="text-xs text-zinc-400 bg-zinc-900/40 p-2.5 rounded-lg border border-zinc-900 font-mono select-all">${s.styleProse}</p>
+                        </div>
+
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-zinc-400">IMAGEN PALETTE PROSE</span>
+                                <button onclick="copyText('${s.id}_palette', this)" class="text-[10px] text-amber-400 hover:text-white font-medium flex items-center gap-1">Copy</button>
+                            </div>
+                            <p id="${s.id}_palette" class="text-xs text-zinc-400 bg-zinc-900/40 p-2.5 rounded-lg border border-zinc-900 font-mono select-all">${s.paletteProse}</p>
+                        </div>
+
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-zinc-400">NEGATIVE CONSTRAINTS (NO TEXT)</span>
+                                <button onclick="copyText('${s.id}_notext', this)" class="text-[10px] text-amber-400 hover:text-white font-medium flex items-center gap-1">Copy</button>
+                            </div>
+                            <p id="${s.id}_notext" class="text-xs text-zinc-400 bg-zinc-900/40 p-2.5 rounded-lg border border-zinc-900 font-mono select-all">${s.noTextProse}</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-zinc-900 pt-4 flex gap-2 mt-auto">
+                        <button onclick="openSqlModal('${s.id}')" class="w-full bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                            Generate SQL Injector
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterStyles(cat) {
+            const btns = document.querySelectorAll('#filter-tabs button');
+            btns.forEach(b => {
+                b.classList.remove('bg-zinc-800', 'text-white');
+                b.classList.add('text-zinc-400');
+            });
+            event.target.classList.add('bg-zinc-800', 'text-white');
+            renderLibrary(cat);
+        }
+
+        function copyText(elemId, btn) {
+            const txt = document.getElementById(elemId).innerText;
+            navigator.clipboard.writeText(txt).then(() => {
+                const orig = btn.innerText;
+                btn.innerText = 'Copied!';
+                btn.classList.add('text-emerald-400');
+                setTimeout(() => {
+                    btn.innerText = orig;
+                    btn.classList.remove('text-emerald-400');
+                }, 1500);
+            });
+        }
+
+        function openSqlModal(styleId) {
+            const s = styles.find(item => item.id === styleId);
+            if (!s) return;
+
+            const safeColors = s.colors.map(c => `"${c}"`).join(', ');
+
+            const sql = `-- Seeding Channel and Prompts for Style: ${s.name}
+-- Replace 'your_channel_id' with your actual channel ID in Supabase
+
+-- 1. Insert or Merge Channel row
+INSERT INTO public.channels (id, name, handle, default_mode, template_family, visual_style_notes, palette_hex, style_keywords, visual_donts, generation_brief, voice_id, voice_speed, music_preset, sfx_level)
+VALUES (
+  'your_channel_id',
+  '${s.name} Channel',
+  '${s.id.replace('style_', '')}',
+  'short',
+  'widescreen',
+  '${s.styleProse.replace(/'/g, "''")}',
+  '{${s.colors.join(',')}}',
+  ARRAY[${s.keywords.map(k => `'${k.replace(/'/g, "''")}'`).join(', ')}],
+  'No letters, words, or alphanumeric print on screens or signs.',
+  'An elegant and engaging channel showcasing ${s.niche}.',
+  'Charon',
+  1.0,
+  'cosmic_ambient',
+  'low'
+)
+ON CONFLICT (id) DO UPDATE SET
+  visual_style_notes = EXCLUDED.visual_style_notes,
+  palette_hex = EXCLUDED.palette_hex,
+  style_keywords = EXCLUDED.style_keywords;
+
+-- 2. Delete old prompt overrides to avoid duplicates
+DELETE FROM public.channel_prompts WHERE channel_id = 'your_channel_id';
+
+-- 3. Insert fresh, production-ready Style and Palette prompts
+INSERT INTO public.channel_prompts (channel_id, prompt_key, version, prompt_text, is_active)
+VALUES 
+  (
+    'your_channel_id',
+    'IMAGEN_VIS_STILL_PROSE_STYLE',
+    'v1.0',
+    '${s.styleProse.replace(/'/g, "''")}',
+    true
+  ),
+  (
+    'your_channel_id',
+    'IMAGEN_VIS_STILL_PROSE_PALETTE',
+    'v1.0',
+    '${s.paletteProse.replace(/'/g, "''")}',
+    true
+  ),
+  (
+    'your_channel_id',
+    'IMAGEN_VIS_STILL_PROSE_NOTEXT',
+    'v1.0',
+    '${s.noTextProse.replace(/'/g, "''")}',
+    true
+  );`;
+
+            document.getElementById('modal-title').innerText = `Database Injector: ${s.name}`;
+            document.getElementById('modal-code').innerText = sql;
+            document.getElementById('sql-modal').classList.remove('hidden');
+        }
+
+        function closeSqlModal() {
+            document.getElementById('sql-modal').classList.add('hidden');
+        }
+
+        function copyModalCode() {
+            const txt = document.getElementById('modal-code').innerText;
+            navigator.clipboard.writeText(txt).then(() => {
+                alert('SQL insert script copied successfully!');
+            });
+        }
+
+        // Init
+        renderLibrary();
+    </script>
+</body>
+</html>

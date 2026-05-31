@@ -1,6 +1,12 @@
 import "server-only";
 
-import type { ContentPillar, ThumbnailTextGlow, VideoIdea } from "@/lib/content-architect/types";
+import type {
+  ContentPillar,
+  ContentTone,
+  ThumbnailTextGlow,
+  VideoIdea,
+  VisualStylePreference,
+} from "@/lib/content-architect/types";
 import { createServiceSupabase } from "@/lib/supabase/admin-client";
 import type { StudioIdeaBatchListItem, StudioIdeaListRow } from "@/lib/studio/studio-idea-batch";
 import { topicsPreview } from "@/lib/studio/topics-preview";
@@ -19,6 +25,19 @@ function isThumbnailTextGlow(s: string): s is ThumbnailTextGlow {
   return s === "cyan" || s === "amber";
 }
 
+function isContentTone(s: string): s is ContentTone {
+  return (
+    s === "analytical" ||
+    s === "stoic" ||
+    s === "provocative" ||
+    s === "calm"
+  );
+}
+
+function isVisualStylePreference(s: string): s is VisualStylePreference {
+  return s === "metaphoric" || s === "narrative" || s === "typography-focused";
+}
+
 function mapIdeaRow(row: {
   id: string;
   title: string;
@@ -27,9 +46,13 @@ function mapIdeaRow(row: {
   thumbnail_text_overlay: string;
   thumbnail_text_glow: string;
   pillar: string;
+  suggested_tone: string;
+  suggested_visual_style: string;
 }): VideoIdea | null {
   if (!isThumbnailTextGlow(row.thumbnail_text_glow)) return null;
   if (!isContentPillar(row.pillar)) return null;
+  if (!isContentTone(row.suggested_tone)) return null;
+  if (!isVisualStylePreference(row.suggested_visual_style)) return null;
   return {
     title: row.title,
     hook: row.hook,
@@ -37,6 +60,8 @@ function mapIdeaRow(row: {
     thumbnailTextOverlay: row.thumbnail_text_overlay,
     thumbnailTextGlow: row.thumbnail_text_glow,
     pillar: row.pillar,
+    suggestedTone: row.suggested_tone,
+    suggestedVisualStyle: row.suggested_visual_style,
   };
 }
 
@@ -59,7 +84,7 @@ export async function listIdeaBatchesFromDb(): Promise<StudioIdeaBatchListItem[]
   const { data: ideaRows, error: ideasErr } = await supabase
     .from("generated_ideas")
     .select(
-      "id, run_id, title, hook, thumbnail_visual_description, thumbnail_text_overlay, thumbnail_text_glow, pillar, created_at"
+      "id, run_id, title, hook, thumbnail_visual_description, thumbnail_text_overlay, thumbnail_text_glow, pillar, suggested_tone, suggested_visual_style, created_at"
     )
     .in("run_id", runIds);
 
@@ -126,8 +151,8 @@ export async function listIdeaBatchesFromDb(): Promise<StudioIdeaBatchListItem[]
     batches.push({
       runId: run.id,
       savedAt: run.created_at,
-      topicsPreview: topicsPreview(run.topics),
-      topics: run.topics,
+      topicsPreview: topicsPreview(run.topics ?? ""),
+      topics: run.topics ?? "",
       ideaCount: ideas.length,
       ideas,
     });

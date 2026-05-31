@@ -10,7 +10,7 @@ import { SectionContainer } from "./section-container";
 import { SectionHeader } from "./section-header";
 
 const blurb =
-  "Brainstorm on the Channel desk. When you start an idea in production, you move through Script, then Audio, then Visuals — each step unlocks the next, grounded in Channel DNA v4.";
+  "Brainstorm on the Channel desk. When you start an idea in production, you move through Script, then Audio, then Visuals — each step unlocks the next, grounded in your active Channel DNA.";
 
 export function CtaSection() {
   return (
@@ -57,8 +57,7 @@ export function CtaSection() {
               Open production
             </Link>
             <p className="max-w-xs text-center text-xs text-muted-foreground sm:text-right">
-              Chibi-Lite webcomic look, Cyber-Stoic palette, Big Brother voice,
-              four acts: mess → deep dive → mirror → way forward.
+              Custom visual styles, highly-structured color palettes, custom narrator voice, and orchestrated 4-act sequential generation pipeline.
             </p>
           </div>
         </GlassPanel>

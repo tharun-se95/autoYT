@@ -22,12 +22,49 @@ export function parseMotionStorageIndex(motionStorageIndex: number): {
 export function computeBeatDurationsSec(
   visualBeats: VisualBeat[],
   blockDurationSec: number,
+  narration?: string,
 ): number[] {
   if (visualBeats.length === 0) return [];
-  const weights = visualBeats.map((b) => {
-    const n = b.phrase.trim().split(/\s+/).filter(Boolean).length;
-    return n || 1;
-  });
+  
+  let weights: number[] = [];
+  
+  // High-fidelity segment word-count calculation based on the narration text between trigger phrases
+  if (narration && narration.trim().length > 0) {
+    const text = narration.toLowerCase();
+    const positions = visualBeats.map((b) => {
+      const phrase = b.phrase.trim().toLowerCase();
+      const pos = text.indexOf(phrase);
+      return { pos, beat: b };
+    });
+    
+    // Check if we found all phrases and they are in chronological order
+    const allFound = positions.every((p) => p.pos !== -1);
+    if (allFound) {
+      // Sort positions to be safe
+      positions.sort((a, b) => a.pos - b.pos);
+      
+      const segments: string[] = [];
+      for (let i = 0; i < positions.length; i++) {
+        const start = positions[i].pos;
+        const end = i < positions.length - 1 ? positions[i + 1].pos : text.length;
+        segments.push(narration.slice(start, end));
+      }
+      
+      weights = segments.map((seg) => {
+        const n = seg.trim().split(/\s+/).filter(Boolean).length;
+        return n || 1;
+      });
+    }
+  }
+  
+  // Fallback to trigger phrase word count if narration parsing fails or is empty
+  if (weights.length === 0) {
+    weights = visualBeats.map((b) => {
+      const n = b.phrase.trim().split(/\s+/).filter(Boolean).length;
+      return n || 1;
+    });
+  }
+
   const total = weights.reduce((a, w) => a + w, 0) || 1;
   const durations = weights.map((w) => blockDurationSec * (w / total));
   const sum = durations.reduce((a, d) => a + d, 0);
@@ -56,11 +93,12 @@ export function resolveBeatAudioTiming(
   visualBeats: VisualBeat[],
   beatIndex: number,
   blockDurationSec: number,
+  narration?: string,
 ): { audioStartSec: number; durationSec: number } {
   if (visualBeats.length === 0) {
     return { audioStartSec: 0, durationSec: blockDurationSec };
   }
-  const durations = computeBeatDurationsSec(visualBeats, blockDurationSec);
+  const durations = computeBeatDurationsSec(visualBeats, blockDurationSec, narration);
   const starts = computeBeatStartTimesSec(durations);
   if (beatIndex < 0 || beatIndex >= durations.length) {
     return { audioStartSec: 0, durationSec: blockDurationSec };

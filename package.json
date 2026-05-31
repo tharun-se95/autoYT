@@ -9,14 +9,18 @@
   },
   "homepage": "https://github.com/tharun-se95/upgrade-life#readme",
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=20.9.0 <25.0.0"
   },
   "scripts": {
-    "dev": "node scripts/check-node-version.js && npx next dev --webpack",
-    "dev:turbo": "node scripts/check-node-version.js && npx next dev --turbopack",
-    "build": "node scripts/check-node-version.js && npx next build",
-    "start": "node scripts/check-node-version.js && npx next start",
-    "lint": "eslint"
+    "postinstall": "node scripts/patch-next-env.cjs",
+    "dev": "node scripts/check-node-version.js && node scripts/with-node22.js dev --webpack",
+    "dev:turbo": "node scripts/check-node-version.js && node scripts/with-node22.js dev --turbopack",
+    "build": "node scripts/check-node-version.js && node scripts/with-node22.js build",
+    "start": "node scripts/check-node-version.js && node scripts/with-node22.js start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "supabase:types": "supabase gen types typescript --project-id qpwyxbtozlqbdpdjmnis > src/lib/supabase/database.types.ts",
+    "typecheck:ideas": "tsc --noEmit scripts/verify-generated-ideas-types.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -25,23 +29,25 @@
     "@supabase/supabase-js": "^2.105.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ffmpeg-static": "^5.3.0",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "server-only": "^0.0.1",
-    "shadcn": "^4.7.0",
+    "shadcn": "^4.8.0",
     "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0"
+    "tw-animate-css": "^1.4.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
+    "@types/node": "25.9.1",
+    "@types/react": "19.2.15",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "6.0.3"
   }
 }

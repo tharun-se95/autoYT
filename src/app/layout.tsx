@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Upgrade Life — Human Sanctuary (long-form YouTube)",
+  title: "Creator Studio — Autonomous Long-Form Video Production",
   description:
-    "Calm, binge-worthy stories on mind, money, habits, and heart — Chibi-Lite educational webcomic visuals and Channel DNA v4.",
+    "Generate, script, narrate, and illustrate binge-worthy digital stories using advanced multi-step orchestrator systems.",
 };
 
 export default function RootLayout({

@@ -6,34 +6,32 @@ import { HOST_MODEL_SHEET_PROSE } from "@/prompts/shared/host-model-sheet";
 /**
  * **Layer D — Imagen only:** pixels, scene string, overlay render contract.
  * Does not repeat title/hook/JSON rules (those live in Content Architect system parts).
- *
- * v5: strengthened positive descriptors, compacted negative list to end.
  */
 export function buildThumbnailImagePrompt(spec: ThumbnailImageSpec): string {
   const overlay = spec.textOverlay.toUpperCase();
   const visual = spec.visualDescription;
   const glowHint =
     spec.textGlow === "amber"
-      ? "Outer glow on the letters: warm amber / gold neon, readable on navy."
-      : "Outer glow on the letters: electric cyan neon, readable on navy.";
+      ? "Outer glow on the letters: warm amber / gold neon, highly readable."
+      : "Outer glow on the letters: electric cyan neon, highly readable.";
 
   return [
-    "2D modern comic-book illustration, 16:9 YouTube thumbnail, thick clean outlines, flat vector color fills, simple cel-shading, sticker-like pop, vector-precise shapes scannable at small sizes (Upgrade Life Visualist / Chibi-Lite narrative explainer comic). NOT a photograph, NOT 3D, NOT realistic.",
+    "2D modern cartoon-book illustration, 16:9 YouTube thumbnail, thick clean outlines, flat vector color fills, simple cel-shading, scannable at small sizes. NOT a photograph, NOT 3D, NOT realistic.",
     CHANNEL_VISUAL_STYLE_PROMPT,
     CYBER_STOIC_PALETTE_PROMPT,
 
-    `CHARACTER LOCK (same mentor every render): ${HOST_MODEL_SHEET_PROSE}`,
+    `CHARACTER LOCK (same subject/host every render): ${HOST_MODEL_SHEET_PROSE}`,
 
-    `SCENE (narrative panel — insert the beat here; stay vector-clear): ${visual}`,
+    `SCENE (narrative panel — insert the action here; stay vector-clear): ${visual}`,
 
-    "Color profile: apply the PALETTE block above — deep navy/slate foundations, stable sage mentor hoodie, neon cyan sparingly for breakthroughs and clarity icons, warm amber for wins, red/orange friction and worry tags confined to the mess zone only. Clean graphic layout; no stray text except intentional infographic labels and the mandated overlay string.",
+    "Color profile: apply the PALETTE swatches block above. Clean graphic layout; no stray text or labels inside the image.",
 
-    "Composition: readable shapes at phone size; soft-focus backgrounds so the host and headline stay clear. No micro-text except intentional infographic tags you add as bold simple labels.",
+    "Composition: readable shapes at phone size; clean layouts so the host and headline stay clear.",
 
     "OVERLAY TEXT (MANDATORY — DO NOT SKIP OR PARAPHRASE):",
-    `Paint the following EXACT string as large, bold, ALL CAPS, highly legible sans-serif lettering in the frame (title-card or dark navy rounded pill), unobstructed by faces or busy texture: "${overlay}".`,
+    `Paint the following EXACT string as large, bold, ALL CAPS, highly legible sans-serif lettering in the frame (title-card or clean rounded pill), unobstructed by faces or busy texture: "${overlay}".`,
     glowHint,
-    "The overlay must be a primary focal element — big enough to read on a phone at thumbnail size. Do not omit, shrink, or substitute different words. No extra headline that contradicts this string.",
+    "The overlay must be a primary focal element — big enough to read on a phone at thumbnail size. Do not omit, shrink, or substitute different words. No extra text that contradicts this string.",
 
     "STRICT EXCLUSIONS: no photorealism, no 3D renders, no realistic human faces or skin texture, no cluttered illegible type.",
   ].join("\n\n");

@@ -3,15 +3,8 @@ import { NextResponse } from "next/server";
 import { generateVisStillImageForBlock } from "@/lib/studio/generate-vis-still";
 import type { ScriptActId } from "@/lib/script-writer/types";
 
-const ACT_IDS = new Set<string>([
-  "mess",
-  "deep_dive",
-  "mirror",
-  "way_forward",
-]);
-
 function isScriptActId(s: string): s is ScriptActId {
-  return ACT_IDS.has(s);
+  return typeof s === "string" && s.trim().length > 0 && /^[a-z0-9_-]+$/i.test(s);
 }
 
 type Body = {

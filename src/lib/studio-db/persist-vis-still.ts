@@ -72,13 +72,13 @@ export async function mergeVisStillManifestSegment(
     (s) => !(s.actId === nextSeg.actId && s.blockIndex === nextSeg.blockIndex),
   );
   rest.push(nextSeg);
-  const ACT_ORDER: ScriptActId[] = [
-    "mess",
-    "deep_dive",
-    "mirror",
-    "way_forward",
-  ];
-  const order = (x: ScriptActId) => ACT_ORDER.indexOf(x);
+  const uniqueActIds: string[] = [];
+  for (const r of rest) {
+    if (!uniqueActIds.includes(r.actId)) {
+      uniqueActIds.push(r.actId);
+    }
+  }
+  const order = (x: ScriptActId) => uniqueActIds.indexOf(x);
   rest.sort((a, b) => {
     const d = order(a.actId) - order(b.actId);
     if (d !== 0) return d;
@@ -182,26 +182,23 @@ export async function persistVisStillFromBase64(params: {
   };
 }
 
-const ACT_ORDER: ScriptActId[] = [
-  "mess",
-  "deep_dive",
-  "mirror",
-  "way_forward",
-];
-
-function actOrderIndex(x: ScriptActId): number {
-  return ACT_ORDER.indexOf(x);
-}
-
 function isScriptActId(s: string): s is ScriptActId {
-  return (ACT_ORDER as readonly string[]).includes(s);
+  return typeof s === "string" && s.trim().length > 0 && /^[a-z0-9_-]+$/i.test(s);
 }
 
 function sortStills<T extends { actId: ScriptActId; blockIndex: number }>(
   rows: T[],
 ): T[] {
+  // Dynamically extract unique actIds in the order they appear to define act ordering
+  const uniqueActIds: string[] = [];
+  for (const r of rows) {
+    if (!uniqueActIds.includes(r.actId)) {
+      uniqueActIds.push(r.actId);
+    }
+  }
+
   return [...rows].sort((a, b) => {
-    const d = actOrderIndex(a.actId) - actOrderIndex(b.actId);
+    const d = uniqueActIds.indexOf(a.actId) - uniqueActIds.indexOf(b.actId);
     if (d !== 0) return d;
     return a.blockIndex - b.blockIndex;
   });

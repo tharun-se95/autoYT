@@ -4,24 +4,60 @@ import {
   VIS_STILL_PALETTE_PROSE,
   VIS_STILL_STYLE_PROSE,
   proseForImagen,
+  sanitizeSceneForImagen,
 } from "@/prompts/shared/imagen-safe-prose";
+import { getPromptWithFallback } from "@/prompts/registry";
+import { injectChannelMetadataIntoPrompt } from "@/lib/studio/prompt-param-injector";
+import { createServiceSupabase } from "@/lib/supabase/admin-client";
 
 /**
  * **Layer D — Imagen:** Ken Burns / b-roll still from a script `[VIS]` line only.
- *
- * v8: prose-only prompt (no section headers / NOT 3D labels that leak into pixels).
- * Developer API cannot set `enhancePrompt`; leakage is controlled via prompt shape only.
+ * Supports custom channel-scoped visual presets, color palettes, and negative constraints.
  */
-export function buildVisStillImagePrompt(visualDescription: string): string {
-  const visual = visualDescription.trim();
-  const host = proseForImagen(HOST_MODEL_SHEET_PROSE);
+export async function buildVisStillImagePrompt(
+  visualDescription: string,
+  channelId?: string | null
+): Promise<string> {
+  const visual = sanitizeSceneForImagen(visualDescription);
+  
+  let hostProse = HOST_MODEL_SHEET_PROSE;
+  let styleProse = VIS_STILL_STYLE_PROSE;
+  let paletteProse = VIS_STILL_PALETTE_PROSE;
+  let noTextProse = VIS_STILL_NO_TEXT_PROSE;
+
+  const supabase = createServiceSupabase();
+  if (supabase && channelId) {
+    const { data: channelRow } = await supabase
+      .from("channels")
+      .select("*")
+      .eq("id", channelId)
+      .maybeSingle();
+
+    if (channelRow) {
+      // Load custom overrides from database if they exist, otherwise use static prompts
+      const customHost = await getPromptWithFallback("HOST_MODEL_SHEET_PROSE", "v1.0", channelId);
+      const customStyle = await getPromptWithFallback("IMAGEN_VIS_STILL_PROSE_STYLE", "v1.0", channelId);
+      const customPalette = await getPromptWithFallback("IMAGEN_VIS_STILL_PROSE_PALETTE", "v1.0", channelId);
+      const customNoText = await getPromptWithFallback("IMAGEN_VIS_STILL_PROSE_NOTEXT", "v1.0", channelId);
+
+      if (customHost) {
+        hostProse = customHost;
+      }
+      styleProse = injectChannelMetadataIntoPrompt(customStyle || VIS_STILL_STYLE_PROSE, channelRow);
+      paletteProse = injectChannelMetadataIntoPrompt(customPalette || VIS_STILL_PALETTE_PROSE, channelRow);
+      noTextProse = injectChannelMetadataIntoPrompt(customNoText || VIS_STILL_NO_TEXT_PROSE, channelRow);
+      console.info(`[prompts] Fully compiled parametric image prompt for channel: ${channelId}`);
+    }
+  }
+
+  const host = proseForImagen(hostProse);
 
   return [
     `Draw a single widescreen cartoon illustration filling the entire frame edge to edge.`,
     `Scene: ${visual}`,
-    VIS_STILL_STYLE_PROSE,
+    styleProse,
     `When the mentor appears: ${host}`,
-    VIS_STILL_PALETTE_PROSE,
-    VIS_STILL_NO_TEXT_PROSE,
+    paletteProse,
+    noTextProse,
   ].join(" ");
 }

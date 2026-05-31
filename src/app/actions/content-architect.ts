@@ -7,16 +7,22 @@ import {
   type Schema,
 } from "@google/generative-ai";
 
-import { CONTENT_ARCHITECT_SYSTEM } from "@/lib/content-architect/system-prompt";
-import { persistIdeaBatch } from "@/lib/studio-db/persist";
-import { generateThumbnailImageCore } from "@/lib/thumbnail/generate-thumbnail-image-core";
-import type {
-  ContentPillar,
-  GenerateIdeasResult,
-  SavedStudioIdea,
-  ThumbnailTextGlow,
-  VideoIdea,
+import "@/prompts/init";
+import {
+  DEFAULT_PROMPT_VERSIONS,
+  getPrompt,
+} from "@/prompts/registry";
+import {
+  type ContentPillar,
+  type ContentTone,
+  type GenerateIdeasResult,
+  type SavedStudioIdea,
+  type ThumbnailTextGlow,
+  type VideoIdea,
+  type VisualStylePreference,
 } from "@/lib/content-architect/types";
+import { persistIdeaBatch, persistIdeaRun } from "@/lib/studio-db/persist";
+import { generateThumbnailImageCore } from "@/lib/thumbnail/generate-thumbnail-image-core";
 
 const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
@@ -29,6 +35,13 @@ const PILLAR_VALUES: ContentPillar[] = [
 ];
 
 const THUMBNAIL_GLOW_VALUES: ThumbnailTextGlow[] = ["cyan", "amber"];
+
+const TONE_VALUES: ContentTone[] = ["analytical", "stoic", "provocative", "calm"];
+const VISUAL_STYLE_VALUES: VisualStylePreference[] = [
+  "metaphoric",
+  "narrative",
+  "typography-focused",
+];
 
 const IDEA_SCHEMA = {
   type: SchemaType.OBJECT,
@@ -65,6 +78,20 @@ const IDEA_SCHEMA = {
       format: "enum" as const,
       enum: PILLAR_VALUES,
     },
+    suggestedTone: {
+      type: SchemaType.STRING,
+      format: "enum" as const,
+      enum: TONE_VALUES,
+      description:
+        "Suggested script tone for the Lead Scriptwriter (analytical, stoic, provocative, or calm).",
+    },
+    suggestedVisualStyle: {
+      type: SchemaType.STRING,
+      format: "enum" as const,
+      enum: VISUAL_STYLE_VALUES,
+      description:
+        "Suggested visual approach for the episode (metaphoric, narrative, or typography-focused).",
+    },
   },
   required: [
     "title",
@@ -73,6 +100,8 @@ const IDEA_SCHEMA = {
     "thumbnailTextOverlay",
     "thumbnailTextGlow",
     "pillar",
+    "suggestedTone",
+    "suggestedVisualStyle",
   ],
 } satisfies Schema;
 
@@ -107,6 +136,14 @@ function isThumbnailTextGlow(s: string): s is ThumbnailTextGlow {
   return s === "cyan" || s === "amber";
 }
 
+function isContentTone(s: string): s is ContentTone {
+  return TONE_VALUES.includes(s as ContentTone);
+}
+
+function isVisualStylePreference(s: string): s is VisualStylePreference {
+  return VISUAL_STYLE_VALUES.includes(s as VisualStylePreference);
+}
+
 function normalizeIdeas(raw: unknown): VideoIdea[] | null {
   if (!raw || typeof raw !== "object" || !("ideas" in raw)) return null;
   const ideas = (raw as { ideas: unknown }).ideas;
@@ -121,6 +158,8 @@ function normalizeIdeas(raw: unknown): VideoIdea[] | null {
     const thumbnailTextOverlay = o.thumbnailTextOverlay;
     const thumbnailTextGlow = o.thumbnailTextGlow;
     const pillar = o.pillar;
+    const suggestedTone = o.suggestedTone;
+    const suggestedVisualStyle = o.suggestedVisualStyle;
     if (typeof title !== "string" || typeof hook !== "string") return null;
     if (
       typeof thumbnailVisualDescription !== "string" ||
@@ -138,6 +177,12 @@ function normalizeIdeas(raw: unknown): VideoIdea[] | null {
     )
       return null;
     if (typeof pillar !== "string" || !isContentPillar(pillar)) return null;
+    if (typeof suggestedTone !== "string" || !isContentTone(suggestedTone)) return null;
+    if (
+      typeof suggestedVisualStyle !== "string" ||
+      !isVisualStylePreference(suggestedVisualStyle)
+    )
+      return null;
     out.push({
       title: title.trim(),
       hook: hook.trim(),
@@ -145,6 +190,8 @@ function normalizeIdeas(raw: unknown): VideoIdea[] | null {
       thumbnailTextOverlay: thumbnailTextOverlay.trim(),
       thumbnailTextGlow,
       pillar,
+      suggestedTone,
+      suggestedVisualStyle,
     });
   }
   return out;
@@ -188,16 +235,13 @@ export async function generateVideoIdeas(
   const genAI = new GoogleGenerativeAI(key);
   const model = genAI.getGenerativeModel({
     model: MODEL,
-    systemInstruction: CONTENT_ARCHITECT_SYSTEM,
+    systemInstruction: getPrompt(
+      "CONTENT_ARCHITECT_SYSTEM",
+      DEFAULT_PROMPT_VERSIONS.CONTENT_ARCHITECT_SYSTEM,
+    ),
   });
 
-  const userText = `The viewer / producer listed these topics, themes, or seeds for upcoming videos. Turn them into ${count} strong, distinct video ideas.
-
----
-${trimmed}
----
-
-Return exactly ${count} ideas as JSON matching the response schema. Follow the **entire** system instruction (do not restate those rules here). Vary pillars when it fits the topics.`;
+  const userText = `The viewer / producer listed these topics, themes, or seeds for upcoming videos. Turn them into ${count} strong, distinct video ideas.\n\n---\n${trimmed}\n---\n\nReturn exactly ${count} ideas as JSON matching the response schema. Follow the **entire** system instruction (do not restate those rules here). Vary pillars when it fits the topics.`;
 
   try {
     const result = await model.generateContent({
@@ -218,7 +262,23 @@ Return exactly ${count} ideas as JSON matching the response schema. Follow the *
         error: "Could not parse ideas from the model. Try again.",
       };
     }
-    const persisted = await persistIdeaBatch(trimmed, ideas.length, ideas);
+    const runPersisted = await persistIdeaRun(trimmed, ideas.length);
+    if (!runPersisted.ok) {
+      const configHint =
+        runPersisted.reason === "not_configured"
+          ? "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) in .env.local and restart the dev server."
+          : "Apply the latest Supabase migrations in supabase/migrations/, then restart the dev server.";
+      const detail = runPersisted.detail ? ` Database: ${runPersisted.detail}` : "";
+      return {
+        ok: false,
+        error:
+          "Ideas were generated but could not be saved to the studio database. " +
+          configHint +
+          detail,
+      };
+    }
+
+    const persisted = await persistIdeaBatch(runPersisted.runId, ideas);
     if (!persisted.ok) {
       const configHint =
         persisted.reason === "not_configured"
@@ -263,7 +323,7 @@ Return exactly ${count} ideas as JSON matching the response schema. Follow the *
       }
     }
 
-    return { ok: true, runId: persisted.runId, ideas: ideasWithThumbnails };
+    return { ok: true, runId: runPersisted.runId, ideas: ideasWithThumbnails };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return {

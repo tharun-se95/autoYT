@@ -1,9 +1,5 @@
-/** Four-act loop keys for Upgrade Life scripts. */
-export type ScriptActId =
-  | "mess"
-  | "deep_dive"
-  | "mirror"
-  | "way_forward";
+/** Four-act loop keys for custom channel scripts. */
+export type ScriptActId = string;
 
 export type VisualBeat = {
   phrase: string;

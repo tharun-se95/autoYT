@@ -9,7 +9,13 @@ export type { StudioIdeaBatchListItem } from "@/lib/studio/studio-idea-batch";
 
 /** Loads all Content Architect runs and ideas (Upcoming tab). */
 export async function listStudioIdeaBatches(): Promise<StudioIdeaBatchListItem[]> {
-  return listIdeaBatchesFromDb();
+  try {
+    const batches = await listIdeaBatchesFromDb();
+    return Array.isArray(batches) ? batches : [];
+  } catch (err) {
+    console.error("[studio-ideas] listStudioIdeaBatches:", err);
+    return [];
+  }
 }
 
 /** Generate missing Imagen thumbnails for recent ideas (no event row yet). */

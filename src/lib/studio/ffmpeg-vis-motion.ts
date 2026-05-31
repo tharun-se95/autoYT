@@ -157,17 +157,7 @@ export async function renderVisMotionMp4(params: {
     const args = ["-y", "-hide_banner", "-loglevel", "error"];
 
     beats.forEach((beat, i) => {
-      const beatDur = framesList[i] / fps;
-      args.push(
-        "-loop",
-        "1",
-        "-framerate",
-        String(fps),
-        "-t",
-        String(beatDur),
-        "-i",
-        beat.imageAbsolutePath,
-      );
+      args.push("-i", beat.imageAbsolutePath);
     });
 
     args.push("-i", audioAbsolutePath);
@@ -189,6 +179,7 @@ export async function renderVisMotionMp4(params: {
 
     args.push("-filter_complex", filterComplex);
     args.push("-map", "[v]", "-map", `${N}:a`);
+    args.push("-af", `afade=t=in:ss=0:d=0.08,afade=t=out:st=${Math.max(0.1, durationSec - 0.08)}:d=0.08`);
     args.push("-frames:v", String(actualTotalFrames));
     args.push(
       "-c:v",
@@ -334,6 +325,8 @@ export async function renderVisMotionBeatMp4(params: {
     String(totalFrames),
     "-map",
     "0:a",
+    "-af",
+    `afade=t=in:ss=0:d=0.08,afade=t=out:st=${Math.max(0.1, durationSec - 0.08)}:d=0.08`,
     "-map",
     "1:v",
     "-c:v",

@@ -11,6 +11,13 @@ import {
 import { GlassPanel } from "@/components/landing/glass-panel";
 import { IdeaResultCard } from "@/components/studio/idea-result-card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { DeskCommissionPayload } from "@/lib/home/commissioned-videos-storage";
 import type { StudioIdeaBatchListItem } from "@/lib/studio/studio-idea-batch";
@@ -58,8 +65,8 @@ export function ContentArchitectForm({
       if (options?.backfillMissing) {
         await backfillMissingIdeaThumbnails(12);
       }
-      const rows = await listStudioIdeaBatches();
-      setBatches(rows);
+      const rows = (await listStudioIdeaBatches()) ?? [];
+      setBatches(Array.isArray(rows) ? rows : []);
       setHydrated(true);
     });
   }, []);
@@ -83,7 +90,7 @@ export function ContentArchitectForm({
 
   const displayBatches = useMemo(() => {
     if (!channelLayout) return batches;
-    const rows = batches.map((b) => ({ ...b, ideas: [...b.ideas] }));
+    const rows = batches.map((b) => ({ ...b, ideas: [...(b.ideas ?? [])] }));
     if (batchSort === "oldest") {
       rows.sort(
         (a, b) =>
@@ -108,7 +115,7 @@ export function ContentArchitectForm({
         );
         return { ...batch, ideas };
       })
-      .filter((batch) => batch.ideas.length > 0);
+      .filter((batch) => (batch.ideas ?? []).length > 0);
   }, [batches, batchSort, channelLayout, ideaSearchQuery]);
 
   const ideaCardVariant = channelLayout ? "grid" : "list";
@@ -149,27 +156,29 @@ export function ContentArchitectForm({
             aria-invalid={!!error && batches.length === 0}
           />
           <div className="flex shrink-0 items-center gap-2 sm:justify-end">
-            <label htmlFor={`${formId}-count`} className="sr-only">
-              Number of ideas to generate
-            </label>
-            <select
-              id={`${formId}-count`}
-              value={ideaCount}
-              onChange={(e) => setIdeaCount(Number(e.target.value))}
+            <Select
+              value={String(ideaCount)}
+              onValueChange={(value: string | null) => {
+                if (value) setIdeaCount(Number(value));
+              }}
               disabled={pending}
-              aria-label="Number of ideas"
-              className={cn(
-                "h-10 min-w-[6.5rem] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none",
-                "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
-                "dark:bg-input/30"
-              )}
             >
-              {COUNT_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id={`${formId}-count`}
+                size="sm"
+                aria-label="Number of ideas"
+                className="h-10 min-w-[6.5rem] dark:bg-input/30"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNT_OPTIONS.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               type="submit"
               size="icon"
@@ -282,7 +291,7 @@ export function ContentArchitectForm({
                   id={`${formId}-batch-${batch.runId}`}
                   className="text-sm font-medium text-foreground"
                 >
-                  {formatBatchTime(batch.savedAt)} · {batch.ideas.length} ideas
+                  {formatBatchTime(batch.savedAt)} · {(batch.ideas ?? []).length} ideas
                 </h3>
                 <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-snug">
                   {batch.topicsPreview}

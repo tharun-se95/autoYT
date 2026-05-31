@@ -15,9 +15,28 @@ if (major < 20 || (major === 20 && minor < 9)) {
 }
 
 if (major >= 25) {
-  console.warn(
-    `[upgrade-life] Node ${process.version}: newer than our default CI target (see .nvmrc → 22). If \`next\` fails with @edge-runtime or empty compiled files, run: rm -rf node_modules .next && npm install`,
-  );
+  const node22 =
+    process.env.UPGRADE_LIFE_NODE ||
+    ["/opt/homebrew/opt/node@22/bin/node", "/usr/local/opt/node@22/bin/node"].find(
+      (p) => {
+        try {
+          return require("fs").existsSync(p);
+        } catch {
+          return false;
+        }
+      },
+    );
+  if (node22) {
+    console.warn(
+      `[upgrade-life] Node ${process.version} detected; npm scripts will re-exec Next with Node 22 (${node22}).`,
+    );
+  } else {
+    console.warn(
+      `[upgrade-life] Node ${process.version} is newer than supported (see .nvmrc → 22).\n` +
+        "Install Node 22 (e.g. brew install node@22) or set UPGRADE_LIFE_NODE.\n" +
+        "If installs look corrupted: rm -rf node_modules .next && npm install",
+    );
+  }
 }
 
 process.exit(0);

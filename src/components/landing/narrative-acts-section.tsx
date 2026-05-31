@@ -19,7 +19,7 @@ const acts = [
     act: "3",
     title: "The mirror",
     timing: "8–15 min",
-    body: "Brutal kindness: the Big Brother reflects the habits and stories you’ve been telling yourself.",
+    body: "Brutal honesty: reflects the patterns, habits, and stories you’ve been telling yourself.",
   },
   {
     act: "4",
@@ -37,9 +37,9 @@ export function NarrativeActsSection() {
     >
       <SectionContainer className="flex flex-col gap-12">
         <SectionHeader
-          eyebrow="Channel DNA storytelling"
+          eyebrow="Channel DNA Storytelling"
           title="The four-act loop every script follows"
-          description="Mess → deep dive → mirror → way forward. Built for long-form bingeing, Chibi-Lite storyboard stills, and the Human Sanctuary feeling."
+          description="A structured narrative arc built for high-retention long-form bingeing, visual storyboard stills, and a professional, cohesive presentation."
         />
         <GlassPanel className="p-6 sm:p-8">
           <ol className="flex flex-col">

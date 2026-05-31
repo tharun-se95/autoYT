@@ -8,12 +8,7 @@ const ACT_IDS: ScriptActId[] = [
 ];
 
 function isScriptActId(s: string): s is ScriptActId {
-  return (
-    s === "mess" ||
-    s === "deep_dive" ||
-    s === "mirror" ||
-    s === "way_forward"
-  );
+  return typeof s === "string" && s.trim().length > 0 && /^[a-z0-9_-]+$/i.test(s);
 }
 
 export function normalizeScript(raw: unknown): ScriptDocument | null {

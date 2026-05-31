@@ -1,6 +1,7 @@
 import "server-only";
 
 import { readFile, stat, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import type { VisualBeat } from "@/lib/script-writer/types";
 import {
@@ -60,6 +61,11 @@ async function writeSidecar(
  * - **Cache miss / stale**: calls ElevenLabs Scribe v2 → aligns beats → saves sidecar.
  * - **Failure**: returns `null` so the caller silently falls back to Tier 2 proportional timing.
  */
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+
+const execAsync = promisify(exec);
+
 export async function loadOrBuildAlignment(params: {
   audioAbsPath: string;
   visualBeats: VisualBeat[];
@@ -86,30 +92,29 @@ export async function loadOrBuildAlignment(params: {
     return cached.beats;
   }
 
-  // 3. Cache miss — call Scribe v2
-  console.log("[alignment-cache] Transcribing via ElevenLabs Scribe v2 —", audioAbsPath);
-  let words;
+  // 3. Cache miss — Call local high-fidelity Python Aligner!
+  console.log("[alignment-cache] Running local Python speech-pause aligner —", audioAbsPath);
   try {
-    words = await transcribeWordTimestamps(audioAbsPath);
+    const pythonScriptPath = path.join(process.cwd(), "scripts", "local-aligner.py");
+    const cmd = `python3 "${pythonScriptPath}" "${audioAbsPath}" ${visualBeats.length} ${totalAudioSec}`;
+    const { stdout } = await execAsync(cmd);
+    const beats = JSON.parse(stdout.trim()) as BeatAlignment[];
+
+    // 4. Save sidecar to prevent re-running FFmpeg/python audits consecutively
+    const sidecar: AlignmentSidecar = {
+      version: SIDECAR_VERSION,
+      audioMtimeMs,
+      words: [], // No words needed for local RMS aligner
+      beats,
+    };
+    await writeSidecar(sp, sidecar);
+
+    return beats;
   } catch (e) {
     console.warn(
-      "[alignment-cache] Scribe v2 failed, falling back to Tier 2:",
+      "[alignment-cache] Local Python aligner failed, falling back to proportional:",
       e instanceof Error ? e.message : e,
     );
     return null;
   }
-
-  // 4. Align beats to transcript
-  const beats = alignBeatsToWords(words, visualBeats, totalAudioSec);
-
-  // 5. Persist sidecar
-  const sidecar: AlignmentSidecar = {
-    version: SIDECAR_VERSION,
-    audioMtimeMs,
-    words,
-    beats,
-  };
-  await writeSidecar(sp, sidecar);
-
-  return beats;
 }

@@ -7,16 +7,10 @@ import type { ScriptActId } from "@/lib/script-writer/types";
 import { ACT_TTS_DIRECTOR_NOTES } from "@/prompts/narration-tts-act-notes";
 import { generateNarrationTts } from "@/lib/studio/generate-narration-tts";
 import { persistNarrationAudioBlock } from "@/lib/studio-db/persist-narration-segment";
-
-const ACT_IDS = new Set<string>([
-  "mess",
-  "deep_dive",
-  "mirror",
-  "way_forward",
-]);
+import { createServiceSupabase } from "@/lib/supabase/admin-client";
 
 function isScriptActId(s: string): s is ScriptActId {
-  return ACT_IDS.has(s);
+  return typeof s === "string" && s.trim().length > 0 && /^[a-z0-9_-]+$/i.test(s);
 }
 
 type Body = {
@@ -75,10 +69,25 @@ export async function POST(request: Request) {
     );
   }
 
+  let channelId: string | null = null;
+  const supabase = createServiceSupabase();
+  if (supabase && videoId) {
+    const { data: vidRow } = await supabase
+      .from("videos")
+      .select("channel_id")
+      .eq("id", videoId)
+      .maybeSingle();
+    if (vidRow?.channel_id) {
+      channelId = vidRow.channel_id;
+      console.info(`[api/tts] Resolved channelId "${channelId}" for video "${videoId}"`);
+    }
+  }
+
   const director = ACT_TTS_DIRECTOR_NOTES[actIdRaw];
   const tts = await generateNarrationTts(narr, {
     directorAddendum: director,
     maxInputChars: NARRATION_TTS_BLOCK_MAX_CHARS,
+    channelId,
   });
 
   if (!tts.ok) {

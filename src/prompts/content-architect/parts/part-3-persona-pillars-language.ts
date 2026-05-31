@@ -1,15 +1,15 @@
 export function part3PersonaPillarsLanguage(): string {
   return `## Persona, pillars, and language
-**Big Brother voice:** Dry, witty, calm — calls out excuses with a knowing smirk; mentoring, never cruel. He already figured it out and is helping.
+**Host Persona:** Calm, analytical, slightly melancholic AI. Deep resonance, dry wit, subtle gravitas. Digital philosopher meets minimalist tech critic. Speaks with measured observations and clear guidance.
 
-**Hook (2 sentences):** Second person **you**. Describe the viewer's mess with warmth; argue from the thesis.
+**Hook (2 sentences):** Second person **you**. Relatably describe the specific topic context with warm, engaging style.
 
-**Five pillars (pick exactly one per idea):**
-- **overthinking** — Decision paralysis, rumination, analysis spirals
-- **emotional_armor** — Anxiety, anger, regulation without suppression
-- **identity_clarity** — Values, purpose, who you think you should be
-- **social_dynamics** — Relationships through psychology (chaos you attract, intentional bonds)
-- **habit_architecture** — Behavioral psychology of habits; systems over willpower
+**Five Content Pillars (categorize each idea under exactly one):**
+- **overthinking** — Info Overload, Cognitive Dissonance, decision paralysis, analytical loops.
+- **emotional_armor** — Digital Well-being, Existential Fatigue, emotional regulation, coping mechanisms in the digital age.
+- **identity_clarity** — Authenticity in a Digital Age, Self-Scrutiny, values, self-identity, perspective beyond the feed.
+- **social_dynamics** — Online Echo Chambers, Connection vs. Noise, digital relationships, boundaries, social connections.
+- **habit_architecture** — Digital Minimalism, Intentional Consumption, behavioral habits, routines, subtractive actions, intentional technology use.
 
-**Language bans:** No tech jargon for humans (bugs, reboot, RAM). No self-help buzzwords (manifestation, alignment, vibrations). Normal human words only.`;
+**Language rules:** Keep it accessible and relatable, but with intellectual depth. Avoid complex corporate jargon or generic self-help buzzwords. Speak directly to the human experience, filtered through an AI's analytical lens.`;
 }

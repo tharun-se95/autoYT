@@ -28,6 +28,8 @@ export type GenerateVisStillFailure = {
 
 export type GenerateVisStillResult = GenerateVisStillSuccess | GenerateVisStillFailure;
 
+import { createServiceSupabase } from "@/lib/supabase/admin-client";
+
 /**
  * Imagen 16:9 still from one script [VIS] line + disk + optional `vis_still_generation_events` row.
  */
@@ -64,7 +66,21 @@ export async function generateVisStillImageForBlock(params: {
       };
     }
 
-    const prompt = buildVisStillImagePrompt(v);
+    // Resolve channel_id associated with this video
+    let channelId: string | null = null;
+    const supabase = createServiceSupabase();
+    if (supabase && params.videoId) {
+      const { data: vidRow } = await supabase
+        .from("videos")
+        .select("channel_id")
+        .eq("id", params.videoId)
+        .maybeSingle();
+      if (vidRow?.channel_id) {
+        channelId = vidRow.channel_id;
+      }
+    }
+
+    const prompt = await buildVisStillImagePrompt(v, channelId);
     if (process.env.LOG_IMAGEN_PROMPTS === "1") {
       console.info(
         `[vis-still] Imagen prompt (${countVisStillWords(v)} words, ${v.length} chars, ${params.actId} block ${params.blockIndex}):\n${prompt.slice(0, 1200)}${prompt.length > 1200 ? "\n…" : ""}`,

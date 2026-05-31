@@ -60,9 +60,17 @@ export async function generateImagenSinglePng(
         const first = response.generatedImages?.[0];
         const bytes = first?.image?.imageBytes;
         if (!bytes) {
-          lastMessage =
-            first?.raiFilteredReason?.trim() ||
-            "Model returned no image (may be filtered).";
+          const reason = first?.raiFilteredReason?.trim();
+          lastMessage = reason
+            ? `${model}: ${reason}`
+            : `${model}: Model returned no image (may be filtered).`;
+          if (process.env.LOG_IMAGEN_PROMPTS === "1") {
+            console.warn("[imagen] filtered or empty", {
+              model,
+              raiFilteredReason: reason ?? null,
+              safetyAttributes: first?.safetyAttributes ?? null,
+            });
+          }
           continue;
         }
 

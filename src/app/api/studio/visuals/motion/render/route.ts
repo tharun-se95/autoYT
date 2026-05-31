@@ -13,15 +13,8 @@ import { listNarrationSegmentsForVideo } from "@/lib/studio-db/persist-narration
 import { listVisStillsForVideo } from "@/lib/studio-db/persist-vis-still";
 import type { ScriptActId } from "@/lib/script-writer/types";
 
-const ACT_IDS: readonly ScriptActId[] = [
-  "mess",
-  "deep_dive",
-  "mirror",
-  "way_forward",
-];
-
 function isActId(s: string): s is ScriptActId {
-  return (ACT_IDS as readonly string[]).includes(s);
+  return typeof s === "string" && s.trim().length > 0 && /^[a-z0-9_-]+$/i.test(s);
 }
 
 type RenderBody = {

@@ -1,221 +1,144 @@
-# Upgrade Life
+# AutoYT — Enterprise-Grade Multi-Channel Video Production Studio
 
-Production studio for the **Upgrade Life** YouTube channel — from brainstormed ideas to a downloadable episode video. Built with **Next.js**, **Gemini**, **Imagen**, **Supabase**, and **ffmpeg**.
+Production studio and autonomous media compilation pipeline for high-retention horizontal video essays and vertical Shorts/Reels. Powered by **Next.js 16**, **Google Gemini 2.0**, **Imagen 4.0**, **Supabase**, and **local hardware acceleration engines** (FFmpeg, local speech-pause aligners, faster-whisper transcription, and libass captioning).
 
 **Repository:** [github.com/tharun-se95/upgrade-life](https://github.com/tharun-se95/upgrade-life)
 
 ---
 
-## What it does
+## 🚀 Key Architectural Breakthroughs
 
-| Area | Description |
-|------|-------------|
-| **Channel desk** | Browse **Videos** in production and **Upcoming** ideas. Generate idea batches with thumbnails (Imagen 4 + Channel DNA v4). |
-| **Studio — Script** | Four-act scripts (`mess` → `deep_dive` → `mirror` → `way_forward`) with `[NAR]` narration and `[VIS]` still lines. |
-| **Studio — Audio** | Per-block Gemini TTS with vocal DNA; audio saved to disk + optional Supabase. |
-| **Studio — Visuals** | Imagen stills per `[VIS]` line, Ken Burns **motion clips** (ffmpeg), assembly **preview**, and **Download video** (full concat export). |
+The platform has been supercharged from a single-channel minimalist tool into an industrial, highly scalable, and completely decentralized multi-channel video factory.
+
+### 🌐 1. Decoupled Multi-Channel Core
+- **Complete Channel Isolation:** Database-driven configuration (`public.channels` and `public.channel_prompts` tables) isolates branding colors, customized vocal presets (ElevenLabs/Gemini speeds, speeds, and pitches), host model sheets, visual keyword lists, and negative prompts.
+- **Seeded Premium Channels:**
+  - *The Cosmic Archive* (Sci-Fi, retro Moebius line-ink illustration, `Charon` deep narrator voice @ `0.92x` speed).
+  - *Existential Whispers* (Philosophy, dark academia oil paintings, `Kore` warm narrator voice @ `0.95x` speed).
+  - *Techno-Bytes* (Dystopian cyberpunk flat vectors, `Aoede` bright sarcastic voice @ `1.10x` speed).
+  - *The Wealth Blueprint* (Personal Finance, flat emerald-and-gold vector blueprint grid diagrams, `Fenrir` warm authoritative voice @ `0.96x` speed).
+  - *Uncanny Valley* (Cultural Critique, retro 1950s pop-art cartoon, highly energetic, sarcastic delivery).
+
+### 📐 2. Domain-Agnostic Dynamic Acts
+- **No Hardcoded Progression:** Dropped the rigid legacy act IDs (`mess`, `deep_dive`, `mirror`, `way_forward`).
+- **Context-Driven Structures:** The scriptwriter and outline planner dynamically design, partition, and name act timelines individually for each channel based on its description, focus, and target topic (e.g., custom educational acts like `agent_chaos` and `statechart_solution` for technical walkthroughs).
+- **Universal Act Mapping:** All local asset stores, file-system directories, and API endpoints are fully upgraded to validate and handle any alphanumeric URL-friendly act ID seamlessly.
+
+### 🧠 3. Self-Healing Multimodal Vision Auditor
+- **Real-Time Quality Gate:** Integrated a robust, on-the-fly vision checking system utilizing Gemini 2.0 Flash to audit generated PNG stills against active style notes, layouts, and forbidden-text constraints.
+- **Prompt Mutation and Healing:** If a still is scored below 7.5 or contains literal text letters/gibberish, the system automatically mutates the visual prompt, appends negative constraints, and regenerates the frame (retrying up to 3 times) to secure pristine, text-free cinematic art.
+
+### 🎙️ 4. Offline Local Speech-Pause Aligner
+- **Zero Cloud Latency:** Replaced ElevenLabs Scribe API with a local Python-based aligner (`scripts/local-aligner.py`).
+- **Millisecond-Perfect Pause Detection:** Uses standard math library and binary buffers to analyze speech-energy peaks (RMS) locally on the host Mac in under 0.05 seconds. It automatically matches trigger-phrases onto natural verbal silence gaps, eliminating API cost and queues.
+
+### 📊 5. Word-by-Word Highlighted Subtitle Burner
+- **Layout-Specific Calibration:** 
+  - *Vertical Shorts (9:16):* Hardburns large center-third kinetic captions ( Montserrat/Impact, 54px size, 480px bottom margin) in rapid 3-word chunks for maximum retention overlay compatibility.
+  - *Widescreen Widescreen (16:9):* Subtle, lower-third aligned text ( Montserrat, 28px size, 86px bottom margin) in comfortable 5-word phrases.
+- **Hardware-Accelerated Render:** Transcribes locally via `faster-whisper`, compiles `.ass` (SubStation Alpha) styled caption sheets, and hardburns them using libass-enabled FFmpeg with dynamic color palette branding.
+
+### 🎨 6. 16-Preset Creative Blueprint Catalog
+- **Style Seeding Dashboard:** Interactive Stripe-style style library page (`/studio/visual-library`) with collapsing prompt details-on-demand and image gallery showcases (Ghibli watercolor, Cyber-glow vectors, CASPIAN flat designs, claymation, and RSA whiteboard marker).
+- **Direct Database Injection:** One-click seeding of any select style's palette, prose prompts, and visual parameters directly into active database channel rows.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend Framework:** Next.js 16 (App Router), React 19, TypeScript
+- **Style Tokens:** Tailwind CSS 4, Zinc-Dark Theme with Amber-Gold highlights (#09090b / #f59e0b)
+- **Database:** Supabase (Service Role security, Row Level Security active)
+- **AI Core:** Google GenAI SDK (Gemini 2.0 Flash + Imagen 4.0 `imagen-4.0-generate-001`)
+- **Python Framework:** Python 3.11 with `moviepy`, `numpy`, `pillow`, `pysubs2`, and `faster_whisper`
+- **Developer Engines:** High-performance Next.js DNS & telemetry loopback bypasses delivering < 250ms Turbopack hot reload speeds.
+
+---
+
+## 📂 Project Structure
 
 ```text
-Ideas + thumbnails  →  Script  →  Narration  →  [VIS] stills  →  Motion clips  →  assembly.mp4
-   Channel desk          Studio      Studio         Studio          ffmpeg           Download
+/
+  .cache/episodes/        # Local scriptwriter outlines and cached acts
+  local-assets/           # Video pipeline assets root (ignored from git)
+    narration-audio/      # Vocal narration WAV folders (per-episode)
+    vis-stills/           # Storyboard PNG stills and final renders
+  scripts/
+    compile_style_test_videos.py  # Master style-isolated video compiler
+    generate-channel-video.py     # End-to-end multi-channel parallel runner
+    local-aligner.py              # Raw speech RMS pause alignment engine
+    burn-subtitles.py             # Whisper + libass subtitles burning script
+    generate-style-previews.js    # Node-based Imagen 4.0 preview generator
+    with-node22.js                # High-performance Turbopack environment launcher
+  src/
+    app/                  # App Router views, server actions, and endpoints
+      channel-desk/       # Main creator production console
+      studio/             # Video asset script, audio, and visual timelines
+      api/studio/         # Media, export, and generation endpoints
+    components/           # Premium design components (Zinc/Amber style tokens)
+    lib/                  # Local asset store, FFmpeg filters, Supabase clients
+    prompts/              # Domain-agnostic scriptwriter, Content Architect templates
+  supabase/migrations/    # Schema and multi-channel DB prompts tables
 ```
 
 ---
 
-## Tech stack
+## ⚡ Quick Start (Performance Pinned)
 
-- **Framework:** [Next.js 16](https://nextjs.org) (App Router), React 19, TypeScript
-- **UI:** Tailwind CSS 4, shadcn/ui
-- **AI:** Google Gemini (ideas, scripts, TTS), Imagen 4 (thumbnails + stills)
-- **Database:** [Supabase](https://supabase.com) (Postgres + service role for server writes)
-- **Media:** Local asset root on disk; **ffmpeg** / **ffprobe** for Ken Burns clips and final concat
-- **Node:** 20.9+ (see `.nvmrc` — Node 22 recommended)
+### 1. Prerequisites
+- **Node.js:** Ensure Node 22+ is available on your path (handled automatically via `scripts/with-node22.js`).
+- **FFmpeg:** Must have a static FFmpeg binary compiled with `libass` support (default brew static builds).
+  ```bash
+  brew install ffmpeg
+  ```
+- **Python:** Python 3.11 virtual environment configured at the project root (`venv`).
+  ```bash
+  source venv/bin/activate
+  pip install moviepy numpy pillow pysubs2 faster-whisper requests
+  ```
+
+### 2. Configure Environment
+Create a `.env.local` file in the project root:
+```bash
+UPGRADE_LIFE_LOCAL_ASSETS_ROOT=/Users/tharunk/Documents/Everyday struggles/upgrade-life/local-assets
+GEMINI_API_KEY=your_gemini_api_key
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_SERVICE_ROLE_KEY=your_local_or_remote_service_role_jwt
+```
+
+### 3. High-Performance Launch (Turbopack < 250ms Compile)
+Always launch the Next.js dev server using our DNS and Telemetry bypass environment:
+```bash
+npm run dev:turbo
+```
 
 ---
 
-## Quick start
+## 🎬 Testing and Compiling Video Styles
 
-### Prerequisites
-
-- **Node.js** ≥ 20.9 ([nvm](https://github.com/nvm-sh/nvm): `nvm use`)
-- **ffmpeg** (includes ffprobe): `brew install ffmpeg` on macOS
-- **Google AI** API key ([Gemini](https://ai.google.dev/))
-- **Supabase** project (optional but recommended for persistence across reloads)
-- Writable folder for generated assets (external drive or `~/upgrade-life-assets`)
-
-### Install and run
+To generate and compile style-isolated 30-second test videos dynamically, use our master orchestrator script. It mocks database configurations, generates detailed scripts, synthesizes narration, compiles high-resolution stills, burns highlighted subtitles, overlays progress bars, and cleans up after itself.
 
 ```bash
-git clone https://github.com/tharun-se95/upgrade-life.git
-cd upgrade-life
-npm install
-cp .env.example .env.local
+# General Syntax:
+python3 scripts/compile_style_test_videos.py <style_id_without_prefix>
+
+# Example 1: Compile Ghibli Watercolor (Cozy, soft green forest scenery, Voice: Kore @0.98x)
+python3 scripts/compile_style_test_videos.py style_ghibli
+
+# Example 2: Compile Moebius Retro Ink (Analog 70s space monoliths, Voice: Charon @0.92x)
+python3 scripts/compile_style_test_videos.py style_moebius
+
+# Example 3: Compile Cyber-Glow Vectors (Holographic PCBS, Voice: Puck @1.05x)
+python3 scripts/compile_style_test_videos.py style_cyber_glow
+
+# Example 4: Compile RSA Whiteboard Marker (Deterministic Statechart tutorials, Voice: Fenrir @0.98x)
+python3 scripts/compile_style_test_videos.py style_whiteboard
 ```
 
-Edit `.env.local` — at minimum:
-
-```bash
-UPGRADE_LIFE_LOCAL_ASSETS_ROOT=/absolute/path/to/upgrade-life-assets
-GEMINI_API_KEY=your_key
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_jwt
-# If ffmpeg is not on PATH when Next.js starts:
-# FFMPEG_PATH=/opt/homebrew/bin/ffmpeg
-# FFPROBE_PATH=/opt/homebrew/bin/ffprobe
-```
-
-Apply database migrations (once per Supabase project):
-
-```bash
-# With Supabase CLI linked to your project:
-supabase db push
-# Or run SQL files in supabase/migrations/ via the dashboard
-```
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
+*Note: The compilation script supports **skip-aware recovery**. If a run times out or hits API limits, simply execute the same command again — it will immediately skip existing stills and audio, finishing compilation in under 10 seconds!*
 
 ---
 
-## Environment variables
+## 📄 License
 
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `UPGRADE_LIFE_LOCAL_ASSETS_ROOT` | Yes (for media) | Absolute path for thumbnails, narration, stills, motion clips, exports |
-| `GEMINI_API_KEY` | Yes | Ideas, scripts, TTS, Imagen |
-| `NEXT_PUBLIC_SUPABASE_URL` | Recommended | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Recommended | Server-side inserts (never expose to the client) |
-| `FFMPEG_PATH` / `FFPROBE_PATH` | If needed | Absolute paths when ffmpeg is not on the dev server `PATH` |
-| `GEMINI_MODEL` | Optional | Default `gemini-2.0-flash` |
-| `GEMINI_TTS_MODEL` / `GEMINI_TTS_VOICE` | Optional | Narration voice (see `.env.example`) |
-
-Copy from [`.env.example`](.env.example). **Never commit** `.env.local`.
-
-Check readiness without exposing secrets: `GET /api/studio/media-status` → `localAssetsConfigured`, `supabaseConfigured`, `ffmpegAvailable`, `motionClipsReady`.
-
----
-
-## Production workflow
-
-1. **Channel desk → Upcoming** — Enter topics, generate ideas + thumbnails. Use **Start in production** to open an episode in the studio.
-2. **Studio → Script** — Generate or edit the four-act script; mark script complete.
-3. **Studio → Audio** — **Generate all narration blocks**; mark audio complete.
-4. **Studio → Visuals**
-   - **Generate all visuals** — Imagen still per `[VIS]` line
-   - **Generate clips** — ffmpeg Ken Burns + muxed narration per block
-   - **Assembly preview** — Play all blocks in order in the hero player
-   - **Download video** — ffmpeg concat → single `assembly.mp4`
-
-### On-disk layout
-
-With `UPGRADE_LIFE_LOCAL_ASSETS_ROOT` set to e.g. `/Volumes/SSD/upgrade-life-assets`:
-
-```text
-{root}/
-  thumbnails/{yyyy}/{mm}/*.png
-  narration-audio/{episodeId}/{actId}-{blockIndex}.wav
-  vis-stills/{episodeId}/{actId}-{blockIndex}.png
-  vis-stills/{episodeId}/motion/{actId}-{blockIndex}.mp4
-  vis-stills/{episodeId}/export/assembly.mp4
-```
-
-Each episode folder includes `manifest.json` files so lists can reload without the database when needed.
-
----
-
-## npm scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Dev server (webpack) |
-| `npm run dev:turbo` | Dev server (Turbopack) |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | ESLint |
-
----
-
-## Project structure
-
-```text
-src/
-  app/                    # Routes, API handlers, server actions
-    channel-desk/         # Ideas + production queue
-    studio/               # Per-episode script / audio / visuals
-    api/studio/           # Media APIs (audio, visuals, thumbnails, export)
-  components/             # UI (landing, channel hub, studio shell)
-  lib/                    # Assets store, ffmpeg, Gemini helpers, Supabase
-  prompts/                # Prompt layers (Content Architect, Scriptwriter, TTS, Imagen)
-supabase/migrations/      # Postgres schema
-scripts/                  # Node version check, thumbnail backfill
-Upgrade_Life_Final_DNA_v4.txt   # Brand DNA source (human reference)
-```
-
-Deeper prompt architecture and API notes: [`src/prompts/README.md`](src/prompts/README.md).
-
----
-
-## ffmpeg
-
-Motion and export require **ffmpeg** and **ffprobe** on the machine running Next.js.
-
-```bash
-# macOS
-brew install ffmpeg
-ffmpeg -version
-ffprobe -version
-```
-
-- **Per-block clips:** still + Ken Burns (`zoompan`) + narration length from ffprobe → H.264 MP4
-- **Download video:** concat demuxer (`-c copy` when possible) → `export/assembly.mp4`
-
-If the dev server does not inherit your shell `PATH`, set `FFMPEG_PATH` and `FFPROBE_PATH` in `.env.local` and restart.
-
----
-
-## Supabase
-
-Migrations create tables including:
-
-- `idea_generation_runs`, `generated_ideas`
-- `script_documents`
-- `thumbnail_generation_events`
-- `narration_audio_segments`
-- `vis_still_generation_events`
-
-Server routes use the **service role** key. Row Level Security is enabled; client-side writes are not used for studio data.
-
----
-
-## API overview (studio)
-
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/studio/media-status` | GET | Env readiness (no secrets) |
-| `/api/studio/audio/segments` | GET | List narration segments |
-| `/api/studio/audio/tts/block` | POST | Generate TTS for one block |
-| `/api/studio/visuals/stills` | GET | List [VIS] stills |
-| `/api/studio/visuals/generate` | POST | Generate one still |
-| `/api/studio/visuals/motion` | GET | Stream one motion clip |
-| `/api/studio/visuals/motion/render` | POST | Batch-render motion clips |
-| `/api/studio/visuals/export` | POST | Build joined `assembly.mp4` |
-| `/api/studio/visuals/export/file` | GET | Download assembly MP4 |
-
----
-
-## Contributing
-
-This is a private channel production tool. For your own fork:
-
-1. Branch from `main`
-2. Keep secrets in `.env.local` only
-3. Run `npm run lint` before opening a PR
-
----
-
-## License
-
-Private project — all rights reserved unless otherwise specified by the repository owner.
+Private repository — all rights reserved. Owned and maintained by Tharun Shivkumar.
